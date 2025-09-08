@@ -1,0 +1,1832 @@
+/* Raspberry Pi 800x480 螢幕專用樣式 */
+
+/* === 基本重置和變數 === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #4d714f;
+    --secondary-color: #7a776d;
+    --background-color: #f0f2f5;
+    --surface-color: #ffffff;
+    --text-color: #333;
+    --text-secondary: #666;
+    --border-color: #ddd;
+    --success-color: #28a745;
+    --error-color: #dc3545;
+    --warning-color: #ffc107;
+    --border-radius: 8px;
+    --shadow: 0 2px 10px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+}
+
+/* === 基礎佈局 === */
+body {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Microsoft YaHei', '微軟雅黑', monospace;
+    font-size: 14px;
+    line-height: 1.2;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    overflow-x: hidden;
+    width: 800px;
+    height: 480px;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+/* 英文像素字體類 */
+.pixel-font-en {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace;
+}
+
+/* 中文點陣字體類 */
+.pixel-font-cn {
+    font-family: 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Courier Prime', 'Microsoft YaHei', '微軟雅黑', monospace;
+}
+
+/* 混合字體類 */
+.pixel-font-mixed {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Microsoft YaHei', '微軟雅黑', monospace;
+}
+
+.container {
+    width: 100%;
+    height: 100%;
+    background-color: var(--surface-color);
+    display: flex;
+    flex-direction: column;
+}
+
+/* === 標題區域 === */
+.pi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    box-shadow: var(--shadow);
+    min-height: 50px;
+}
+
+.pi-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--success-color);
+    animation: pulse 2s infinite;
+}
+
+.status-dot.offline {
+    background-color: var(--error-color);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* === 分頁導航 === */
+.tab-nav {
+    display: flex;
+    background-color: var(--surface-color);
+    border-bottom: 2px solid var(--border-color);
+    padding: 0 16px;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background-color: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.tab-button:hover {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: #f8f9fa;
+}
+
+/* === 分頁內容 === */
+.tab-content {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+}
+
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* === 今日甦醒分頁 === */
+.clock-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 12px;
+}
+
+.action-area {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.load-button, .start-button {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.load-button {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.load-button:hover {
+    background-color: #6b6a62;
+}
+
+.start-button {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.start-button:hover:not(:disabled) {
+    background-color: #3e5a40;
+}
+
+.start-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.action-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0;
+}
+
+.result-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.result-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    min-height: 20px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+}
+
+.flag-container {
+    text-align: center;
+}
+
+.flag-container img {
+    max-width: 60px;
+    max-height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.map-container {
+    flex: 1;
+    min-height: 200px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: #f8f9fa;
+}
+
+/* === 甦醒軌跡分頁 === */
+.history-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 12px;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.history-header p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.refresh-button {
+    padding: 6px 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.refresh-button:hover {
+    background-color: #3e5a40;
+}
+
+.history-content {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+}
+
+.history-list {
+    flex: 1;
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: white;
+}
+
+.history-list li {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.history-list li:hover {
+    background-color: #f8f9fa;
+}
+
+.history-list li:last-child {
+    border-bottom: none;
+}
+
+.history-map {
+    flex: 1;
+    min-height: 250px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: #f8f9fa;
+}
+
+/* === 眾人地圖分頁 === */
+.global-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 12px;
+}
+
+.global-header {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.global-header p {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.global-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.date-control, .group-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.date-control label, .group-control label {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.date-input, .group-select {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 12px;
+    background-color: white;
+}
+
+.global-map {
+    flex: 1;
+    min-height: 280px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: #f8f9fa;
+}
+
+/* === 偵錯資訊 === */
+.debug-info {
+    font-size: 10px;
+    color: var(--text-secondary);
+    background-color: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: var(--border-radius);
+    border: 1px solid #eee;
+    max-height: 60px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+}
+
+/* === 彈出式視窗 === */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-dialog {
+    width: 90%;
+    max-width: 600px;
+    max-height: 90%;
+}
+
+.modal-content-wrapper {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.modal-close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-body {
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+.modal-footer {
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    text-align: right;
+}
+
+.modal-button-secondary {
+    padding: 6px 16px;
+    background-color: var(--text-secondary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.modal-button-secondary:hover {
+    background-color: #555;
+}
+
+/* === 地圖樣式 === */
+.leaflet-container {
+    font-size: 12px;
+}
+
+.leaflet-popup-content {
+    font-size: 11px;
+    margin: 8px;
+}
+
+.leaflet-control {
+    font-size: 11px;
+}
+
+/* === 響應式調整 === */
+@media (max-width: 800px) {
+    body {
+        width: 100vw;
+        height: 100vh;
+        position: static;
+    }
+    
+    .global-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .history-content {
+        flex-direction: column;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+
+/* === 隱藏元素 === */
+.hidden {
+    display: none !important;
+}
+
+/* === 載入動畫 === */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.6),
+        transparent
+    );
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* === 新增：Pi 顯示專用樣式 === */
+
+/* 主要顯示區域 */
+.main-display {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #000000 0%, #764ba2 100%);
+}
+
+/* 狀態管理 */
+.result-state,
+.loading-state,
+.error-state {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.5s ease-in-out;
+}
+
+.waiting-state {
+    position: fixed !important; /* 使用 fixed 定位脫離正常文檔流 */
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important; /* 覆蓋整個視窗 */
+    height: 100vh !important;
+    display: none; /* 預設隱藏，只有 active 時才顯示 */
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1000 !important; /* 非常高的 z-index 確保在最上層 */
+    background: rgba(0, 0, 0, 0.1); /* 輕微的半透明背景讓地圖若隱若現 */
+    transition: all 0.3s ease-in-out;
+}
+
+.result-state.active,
+.loading-state.active,
+.error-state.active {
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+    z-index: 1; /* 確保在地圖之上 */
+}
+
+.waiting-state.active {
+    display: flex !important; /* 只有 active 時才顯示 */
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: fixed !important; /* 使用 fixed 定位 */
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 1000 !important; /* 非常高的 z-index 確保在最上層 */
+}
+
+/* 舊的等待狀態樣式已移除 - 使用新的設計 */
+
+/* 舊的載入狀態樣式已移除 - 使用新的設計 */
+
+/* 舊的結果狀態樣式已移除 - 使用新設計 */
+
+.city-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.city-main {
+    flex: 1;
+}
+
+.city-name {
+    font-size: 36px;
+    font-weight: 200;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+}
+
+.country-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.country-flag {
+    width: 50px;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.country-name {
+    font-size: 22px;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.greeting-text {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: right;
+    font-style: italic;
+    min-width: 150px;
+    max-width: 200px;
+}
+
+/* 地圖區域 */
+.map-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.map-container {
+    flex: 1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    min-height: 200px;
+}
+
+
+
+/* 錯誤狀態 */
+.error-state {
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.error-content {
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.error-text {
+    font-size: 24px;
+    font-weight: 300;
+    margin-bottom: 12px;
+    color: #ff6b6b;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.error-subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* 動畫效果 */
+@keyframes pulseWave {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Leaflet 地圖樣式調整 */
+.leaflet-container {
+    background: transparent;
+}
+
+.leaflet-control-container {
+    display: none !important; /* 隱藏地圖控制項 */
+} 
+
+/* 舊的結果頁面樣式已移除 - 使用新的設計 */
+
+/* 舊的閃爍動畫已移除 - 新設計使用 titleBlink 動畫 */
+
+/* 舊的國家信息區樣式已移除 - 使用新的設計 */
+
+/* 舊的故事和問候語樣式已移除 - 新設計不需要這些 */
+
+/* 舊的地圖和滾動條樣式已移除 - 新設計不需要這些 */
+
+/* 舊的zoom按鈕樣式已移除 - 新設計不需要這些 */
+
+/* 舊的媒體查詢已移除 - 新設計有自己的響應式樣式 */
+
+/* 移除重複的結果狀態定義 */
+
+/* === 結果頁面樣式 === */
+.result-state {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 主要互動地圖背景 - 全域背景 */
+.main-map-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+/* 地圖瓦片 - 灰黃配色 */
+.main-map-background .leaflet-tile {
+    filter: sepia(40%) saturate(60%) hue-rotate(25deg) brightness(0.8) contrast(1.0);
+}
+
+/* 地圖容器背景 - 灰色基調 */
+.main-map-background .leaflet-container {
+    background-color: #9A9A9A !important;
+}
+
+/* 地圖圖層順序 */
+.main-map-background .leaflet-map-pane { z-index: 100 !important; }
+.main-map-background .leaflet-tile-pane { z-index: 110 !important; }
+.main-map-background .leaflet-overlay-pane { z-index: 120 !important; }
+.main-map-background .leaflet-shadow-pane { z-index: 130 !important; }
+.main-map-background .leaflet-marker-pane { z-index: 140 !important; }
+.main-map-background .leaflet-tooltip-pane { z-index: 150 !important; }
+.main-map-background .leaflet-popup-pane { z-index: 160 !important; }
+
+/* 確保軌跡線和標記在地圖上方 */
+.trajectory-line { z-index: 200 !important; }
+.trajectory-marker { z-index: 210 !important; }
+.trajectory-day { z-index: 220 !important; }
+.trajectory-marker.current-location { z-index: 230 !important; }
+.trajectory-marker.current-location .trajectory-day { z-index: 240 !important; }
+
+/* 隱藏地圖控制項 */
+.main-map-background .leaflet-control-container {
+    display: none !important;
+}
+
+/* 左側信息面板 (浮層) - 適應DSI螢幕 */
+.result-info-panel {
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    width: 400px !important;
+    min-height: 300px !important;
+    background: rgba(255, 255, 255, 0.6) !important;  /* 增加透明度 */
+    border-radius: 12px !important;
+    padding: 20px !important;
+    z-index: 999999 !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    max-height: 420px !important;
+    overflow-y: auto !important;
+    pointer-events: auto !important;
+}
+
+/* Day 計數器 */
+.day-counter {
+    margin-bottom: 15px !important;
+    display: inline-block !important;
+    width: auto !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+    vertical-align: baseline !important;
+}
+
+/* 確保容器支持同一行顯示 */
+.result-info-panel .day-counter,
+.day-counter {
+    display: block !important;
+    white-space: nowrap !important;
+}
+
+.result-info-panel .date-info,
+.date-info {
+    display: block !important;
+    white-space: nowrap !important;
+    margin-bottom: 10px !important;
+}
+
+.result-info-panel .country-info,
+.country-info {
+    display: block !important;
+    margin-bottom: 10px !important;
+    /* 移除 white-space: nowrap，允許內容換行 */
+}
+
+.result-info-panel .day-counter .day-label,
+.result-info-panel .day-counter .day-number,
+.day-counter .day-label,
+.day-counter .day-number,
+.result-info-panel .date-info .date-label,
+.result-info-panel .date-info .date-value,
+.date-info .date-label,
+.date-info .date-value,
+.result-info-panel .country-info .country-flag,
+.result-info-panel .country-info .country-name,
+.country-info .country-flag,
+.country-info .country-name {
+    display: inline !important;
+    vertical-align: baseline !important;
+    /* 移除 white-space: nowrap，允許國家名稱換行 */
+}
+
+/* 專門為國家名稱設定換行規則 */
+.result-info-panel .country-name,
+.country-name {
+    max-width: 300px !important;  /* 設定最大寬度 */
+    word-wrap: break-word !important;  /* 允許長單詞換行 */
+    overflow-wrap: break-word !important;  /* 現代瀏覽器的換行屬性 */
+    line-height: 1.2 !important;  /* 設定行高 */
+    display: inline-block !important;  /* 改為 inline-block 以支援寬度設定 */
+}
+
+.day-label {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 10px !important;
+    color: #333333 !important;
+    display: inline !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: baseline !important;
+}
+
+.day-number {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 10px !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+    display: inline !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: baseline !important;
+}
+
+/* 故事文字容器 */
+.story-container {
+    margin-top: 20px !important;
+    padding: 15px 0 !important;
+    border-top: 1px solid #e0e0e0 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+}
+
+.story-text {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Microsoft YaHei', '微軟雅黑', monospace !important;
+    font-size: 16px !important;
+    line-height: 1.6 !important;
+    color: #333333 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    display: block !important;
+    visibility: visible !important;
+    min-height: 20px !important;
+}
+
+/* 打字機效果樣式 */
+.story-text.typing::after {
+    content: '|';
+    animation: blink 1s infinite;
+    color: #4d714f;
+}
+
+.story-text.completed {
+    opacity: 1;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* 日期信息 */
+.date-info {
+    margin-bottom: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+}
+
+.date-label {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 12px !important;
+    color: #333333 !important;
+    margin-right: 5px !important;
+    flex-shrink: 0 !important;
+    display: inline !important;
+}
+
+.date-value {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 10px !important;
+    color: #000000 !important;
+    flex-shrink: 0 !important;
+    display: inline !important;
+}
+
+/* 當地問候語 */
+.greeting-info {
+    margin-bottom: 20px !important;
+    display: block !important;
+}
+
+.local-greeting {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', monospace !important;
+    font-size: 12px !important;
+    color: #666666 !important;
+    display: block !important;
+}
+
+/* 位置信息 */
+.location-info {
+    margin-bottom: 15px !important;
+    display: block !important;
+}
+
+/* 座標信息（整合到位置信息中） */
+.coordinates-info {
+    margin-top: 10px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #e0e0e0 !important;
+    display: block !important;
+}
+
+.coordinates-text {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 10px !important;
+    color: #666666 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    display: inline-block !important;
+}
+
+.city-name {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 32px !important;
+    color: #000000 !important;
+    margin: 0 0 15px 0 !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
+    display: block !important;
+}
+
+.country-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 15px !important;
+    flex-wrap: wrap !important;  /* 允許換行 */
+    /* 移除 white-space: nowrap，允許長文字換行 */
+}
+
+.country-flag {
+    width: 32px !important;
+    height: 24px !important;
+    border: 1px solid #cccccc !important;
+    border-radius: 2px !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+.country-name {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 16px !important;
+    color: #333333 !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* 地圖縮放控制按鈕 - 移到右上角 */
+.map-zoom-controls {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    z-index: 9999999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    pointer-events: auto !important;
+}
+
+.zoom-button {
+    width: 60px !important;
+    height: 60px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 3px solid #4d714f !important;
+    border-radius: 10px !important;
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+    font-size: 32px !important;
+    font-weight: bold !important;
+    color: #4d714f !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    user-select: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    pointer-events: auto !important;
+    z-index: 9999999 !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+.zoom-button:hover {
+    background: rgba(255, 255, 255, 1) !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.zoom-button:active {
+    transform: scale(0.95) !important;
+}
+
+.zoom-button:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* 確保地圖控制項在最上層 */
+.leaflet-control-container {
+    z-index: 9999999 !important;
+    pointer-events: auto !important;
+}
+
+/* 確保地圖圖層在底層 */
+.leaflet-map-pane {
+    z-index: 1 !important;
+}
+
+/* 確保地圖瓦片在底層 */
+.leaflet-tile-pane {
+    z-index: 1 !important;
+}
+
+/* 底部語音提示條 (浮層) - 適應DSI螢幕，三行字高度 */
+.voice-loading-bar {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    padding: 15px 20px !important;
+    z-index: 999999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    min-height: 72px !important;
+    max-height: 72px !important;
+    box-sizing: border-box !important;
+}
+
+.voice-loading-text {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', monospace !important;
+    font-size: 16px !important;
+    color: #FFFFFF !important;
+    margin: 0 !important;
+    text-align: left !important;
+    letter-spacing: 1px !important;
+    line-height: 1.4 !important;
+    position: relative !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    overflow: hidden !important;
+    transition: none !important;
+    animation: none !important;
+    word-wrap: break-word !important;
+    width: 100% !important;
+    display: block !important;
+    padding: 4px 0 !important;
+}
+
+/* 打字機光標效果 - 更明顯 */
+.voice-loading-text.typing::after {
+    content: '|';
+    color: #FFFFFF;
+    font-weight: bold;
+    animation: typingCursor 0.8s infinite;
+    margin-left: 3px;
+    font-size: 1.2em;
+}
+
+@keyframes typingCursor {
+    0%, 40% {
+        opacity: 1;
+    }
+    41%, 100% {
+        opacity: 0;
+    }
+}
+
+/* 打字機文字出現效果 */
+.voice-loading-text.typing {
+    animation: none;
+}
+
+/* 當語音播放完成時的淡入效果 */
+.voice-loading-text.completed {
+    animation: fadeInComplete 0.5s ease-in;
+}
+
+@keyframes fadeInComplete {
+    from {
+        opacity: 0.8;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 地圖標記彈窗樣式 */
+.main-map-background .leaflet-popup-content-wrapper {
+    background: #ffffff !important;
+    border: 2px solid #333333 !important;
+    border-radius: 8px !important;
+    font-family: 'Press Start 2P', 'Courier Prime', monospace !important;
+}
+
+.main-map-background .leaflet-popup-tip {
+    background: #ffffff !important;
+    border: 2px solid #333333 !important;
+}
+
+/* DSI 800x480 螢幕調整 */
+@media (max-width: 800px), (max-height: 480px) {
+    .result-info-panel {
+        padding: 15px !important;
+        max-height: 420px !important;
+    }
+    
+    .city-name {
+        font-size: 22px !important;
+        letter-spacing: 1px !important;
+    }
+    
+    .country-flag {
+        width: 24px !important;
+        height: 18px !important;
+    }
+    
+    .country-name {
+        font-size: 13px !important;
+    }
+    
+    .voice-loading-bar {
+        padding: 12px 18px !important;
+        min-height: 60px !important;
+        max-height: 60px !important;
+    }
+    
+    .voice-loading-text {
+        font-size: 14px !important;
+        line-height: 1.3 !important;
+        min-height: 36px !important;
+        max-height: 36px !important;
+        overflow: hidden !important;
+    }
+    
+    .coordinates-text {
+        font-size: 9px;
+    }
+}
+
+/* === 地圖 Popup 樣式 === */
+.leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.trajectory-popup .leaflet-popup-content,
+.today-popup .leaflet-popup-content,
+.wake-up-popup .leaflet-popup-content {
+    margin: 8px 12px !important;
+    font-family: 'Press Start 2P', monospace !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* === 軌跡線樣式 === */
+.trajectory-marker {
+    background: none !important;
+    border: none !important;
+    z-index: 1000 !important;
+}
+
+.trajectory-day {
+    background: #FF6B6B;
+    color: white;
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-family: 'Press Start 2P', 'Courier Prime', monospace;
+    font-size: 8px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    min-width: 36px;
+    line-height: 1.2;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+/* 軌跡線動畫效果 */
+.trajectory-marker:hover .trajectory-day {
+    background: #FF5252;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+/* 當前位置標記樣式 */
+.trajectory-marker.current-location .trajectory-day {
+    background: #4CAF50;
+    border-color: white;
+    font-size: 10px;
+    min-width: 42px;
+    padding: 3px 8px;
+    z-index: 1001 !important;
+}
+
+/* === 新增：清喉嚨彈出對話框樣式 === */
+.throat-clearing-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ffffff;
+    border: 4px solid #000000;
+    padding: 30px;
+    z-index: 9999999;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    text-align: center;
+    color: #000000;
+    box-shadow: 
+        0 0 30px #000000,
+        inset 0 0 20px #00000010;
+    display: none;
+    min-width: 300px;
+    animation: popup-bounce 0.5s ease-out;
+}
+
+@keyframes popup-bounce {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.throat-clearing-popup.show {
+    display: block;
+}
+
+.throat-clearing-text {
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    line-height: 1.5;
+}
+
+.throat-clearing-dots {
+    font-size: 24px;
+    animation: dots-blink 1.5s infinite;
+}
+
+@keyframes dots-blink {
+    0%, 33% { opacity: 1; }
+    34%, 66% { opacity: 0.3; }
+    67%, 100% { opacity: 1; }
+}
+
+/* 彈出對話框背景遮罩 */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999998;
+    display: none;
+}
+
+.popup-overlay.show {
+    display: block;
+} 
+
+/* === 等待畫面樣式 === */
+.waiting-state {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 等待畫面背景地圖樣式已移除 */
+
+/* 中央內容框 */
+.waiting-content-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: 3px solid #FFD700;
+    border-radius: 8px;
+    padding: 30px 50px;
+    text-align: center;
+    z-index: 250 !important; /* 確保在地圖所有元素之上 */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: block !important;
+    visibility: visible !important;
+    max-width: 450px;
+    width: 60%;
+    min-height: 220px;
+}
+
+/* 主標題 - PRESS THE BUTTON */
+.press-button-title {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace;
+    font-size: 36px;
+    color: #000000;
+    margin: 0 0 20px 0;
+    letter-spacing: 3px;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+/* 副標題 - TO LOCATE YOUR WAKEUP LOCATION */
+.press-button-subtitle {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace;
+    font-size: 14px;
+    color: #333333;
+    margin: 0 0 25px 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* 中文說明 */
+.press-button-chinese {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Microsoft YaHei', '微軟雅黑', monospace;
+    font-size: 16px;
+    color: #666666;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+/* 閃爍動畫 */
+.blinking-text {
+    animation: titleBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes titleBlink {
+    0%, 70% { 
+        opacity: 1;
+        text-shadow: 2px 2px 0px #FFD700;
+    }
+    80%, 100% { 
+        opacity: 0.3;
+        text-shadow: 1px 1px 0px #FFD700;
+    }
+}
+
+/* 800x480 螢幕調整 */
+@media (max-width: 800px), (max-height: 480px) {
+    .waiting-content-box {
+        padding: 30px 40px;
+        max-width: 600px;
+    }
+    
+    .press-button-title {
+        font-size: 28px;
+        letter-spacing: 2px;
+    }
+    
+    .press-button-subtitle {
+        font-size: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .press-button-chinese {
+        font-size: 14px;
+    }
+} 
+
+/* 舊的等待畫面地圖樣式已移除 */ 
+
+/* === Loading 畫面樣式 === */
+.loading-state {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Loading 畫面背景地圖樣式已移除 */
+
+/* Loading 中央內容框 */
+.loading-content-box {
+    position: absolute;
+    top: 50%;
+    left: 55%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    border: 3px solid #666666;
+    border-radius: 8px;
+    padding: 30px 50px;
+    text-align: center;
+    z-index: 100 !important; /* 提高層級，確保在地圖之上 */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    display: block !important;
+    visibility: visible !important;
+    max-width: 450px;
+    width: 60%;
+    min-height: 180px;
+}
+
+/* LOCATING... 標題 */
+.locating-title {
+    font-family: 'Press Start 2P', 'Courier Prime', monospace;
+    font-size: 36px;
+    color: #FFFFFF;
+    margin: 0 0 20px 0;
+    letter-spacing: 3px;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+/* 進度文字 - 正在為你定位... */
+.locating-progress {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Microsoft YaHei', '微軟雅黑', monospace;
+    font-size: 16px;
+    color: #FFFFFF;
+    margin: 0 0 25px 0;
+    letter-spacing: 1px;
+}
+
+/* 底部說明文字 */
+.locating-subtitle {
+    font-family: 'Press Start 2P', 'Courier Prime', 'Noto Sans CJK TC', 'Noto Sans CJK SC', 'Microsoft YaHei', '微軟雅黑', monospace;
+    font-size: 18px;
+    color: #AAAAAA;
+    margin: 0;
+    letter-spacing: 1px;
+    opacity: 0.7;
+}
+
+/* 舊的loading畫面地圖樣式已移除 */
+
+/* 800x480 螢幕調整 */
+@media (max-width: 800px), (max-height: 480px) {
+    .loading-content-box {
+        padding: 30px 40px;
+        max-width: 600px;
+    }
+    
+    .locating-title {
+        font-size: 28px;
+        letter-spacing: 2px;
+    }
+    
+    .locating-progress {
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    
+    .locating-subtitle {
+        font-size: 12px;
+    }
+} 
+
+/* === 調試樣式 - 確保元素顯示 === */
+.result-state .result-info-panel,
+.result-state .voice-loading-bar {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 99999 !important;
+    position: relative !important;
+}
+
+/* 強制顯示浮動元素 - 生產版本 */
+.result-info-panel {
+    z-index: 999999 !important;
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    width: 300px !important;
+    min-height: 150px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    max-height: 440px !important;
+    overflow-y: auto !important;
+}
+
+.voice-loading-bar {
+    z-index: 999999 !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    min-height: 72px !important;
+    max-height: 72px !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    padding: 15px 20px !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+} 
+
+/* 軌跡線和標記樣式 */
+.trajectory-marker {
+    background: none !important;
+    border: none !important;
+    z-index: 1000 !important;
+}
+
+.trajectory-day {
+    background: #FF6B6B;
+    color: white;
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 4px 8px;
+    font-family: 'Press Start 2P', 'Courier Prime', monospace;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    min-width: 42px;
+    line-height: 1.2;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+.trajectory-marker:hover .trajectory-day {
+    background: #FF5252;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+/* 當前位置標記樣式 */
+.trajectory-marker.current-location .trajectory-day {
+    background: #4CAF50;
+    border-color: white;
+    font-size: 12px;
+    min-width: 48px;
+    padding: 5px 10px;
+    z-index: 1001 !important;
+}
+
+/* DSI 800x480 螢幕調整 */
+@media (max-width: 800px), (max-height: 480px) {
+    .map-zoom-controls {
+        top: 15px !important;
+        right: 15px !important;
+        left: auto !important;
+    }
+    
+    .zoom-button {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+    
+    .trajectory-day {
+        font-size: 9px;
+        min-width: 38px;
+        padding: 3px 6px;
+    }
+    
+    .trajectory-marker.current-location .trajectory-day {
+        font-size: 11px;
+        min-width: 44px;
+        padding: 4px 8px;
+    }
+} 
+
+/* ===== 緊急調試樣式 - 確保浮動元素顯示 ===== */
+.result-state .result-info-panel,
+.result-state #resultInfoPanel,
+#resultState .result-info-panel {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999999 !important;
+    position: fixed !important;
+    top: 20px !important;
+    left: 20px !important;
+    width: 300px !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    pointer-events: auto !important;
+}
+
+.result-state .voice-loading-bar,
+.result-state #voiceLoadingBar,
+#resultState .voice-loading-bar {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999999 !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 3px solid blue !important; /* 緊急調試邊框 */
+    padding: 20px !important;
+    pointer-events: auto !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+}
+
+/* 強制所有內部元素也顯示，但排除需要同一行顯示的元素 */
+.result-info-panel *:not(.day-label):not(.day-number):not(.date-label):not(.date-value):not(.country-flag):not(.country-name) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* 專門設置需要同一行顯示的元素 */
+.result-info-panel .day-label,
+.result-info-panel .day-number,
+.result-info-panel .date-label,
+.result-info-panel .date-value,
+.result-info-panel .country-flag {
+    display: inline !important;
+    white-space: nowrap !important;
+    vertical-align: baseline !important;
+}
+
+/* 國家名稱特殊處理：允許換行但盡量保持在同一行 */
+.result-info-panel .country-name {
+    display: inline-block !important;
+    vertical-align: baseline !important;
+    /* 不設定 white-space: nowrap，允許長國家名稱換行 */
+}
+
+.voice-loading-bar * {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* 確保地圖層級在最底層 */
+.leaflet-container,
+.leaflet-container *,
+#mainMapContainer,
+#mainMapContainer * {
+    z-index: 1 !important;
+    max-z-index: 10 !important;
+} 
+
+/* 結果資訊面板 - 顯示在地圖標記附近 */
+.result-info-panel {
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    width: 300px !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    z-index: 999999 !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    max-height: 440px !important;
+    overflow-y: auto !important;
+    pointer-events: auto !important;
+}
+
+/* 軌跡標記樣式 */
+.trajectory-marker {
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+}
+
+.trajectory-day {
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: white !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    font-family: 'Press Start 2P', monospace !important;
+    font-size: 10px !important;
+    min-width: 42px !important;
+    text-align: center !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 當前位置標記 */
+.trajectory-marker.current-location .trajectory-day {
+    background: #FF4B4B !important;
+    color: white !important;
+    border-color: white !important;
+    font-size: 10px !important;
+    min-width: 42px !important;
+    padding: 3px 8px !important;
+    z-index: 1001 !important;
+    box-shadow: 0 2px 8px rgba(255, 75, 75, 0.4) !important;
+}
+
+/* === 軌跡與標記美化樣式 === */
+
+/* 軌跡線樣式 */
+.trajectory-line {
+    stroke: #999999 !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 5, 5 !important;
+    stroke-linecap: round !important;
+    opacity: 0.6 !important;
+}
+
+.trajectory-line.current {
+    stroke: #E63946 !important;
+    stroke-width: 3px !important;
+    stroke-dasharray: none !important;
+    opacity: 0.8 !important;
+}
+
+/* 歷史標記樣式 - 移除hover效果 */
+.history-marker {
+    /* 移除所有hover和動畫效果 */
+}
+
+/* 今日標記樣式 - 移除hover效果和動畫 */
+.today-marker {
+    /* 移除所有hover效果和動畫 */
+} 
