@@ -1,5 +1,5 @@
 // Raspberry Pi 專用甦醒地圖腳本
-// 簡化版本，專為 800x480 螢幕和固定使用者 "future" 設計
+// 簡化版本，專為 800x480 螢幕和固定使用者 "hsuan117" 設計
 
 // 全域變數
 let db, auth;
@@ -1052,8 +1052,8 @@ window.addEventListener('firebaseReady', async (event) => {
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            // 固定使用者名稱為 "future"
-            rawUserDisplayName = "future";
+            // 固定使用者名稱為 "hsuan117"
+            rawUserDisplayName = "hsuan117";
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
             // 更新顯示
