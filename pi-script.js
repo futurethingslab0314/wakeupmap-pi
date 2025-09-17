@@ -4,7 +4,7 @@
 // 全域變數
 let db, auth;
 let currentDataIdentifier = null;
-let rawUserDisplayName = "future";
+let rawUserDisplayName = "hsuan117";
 let clockLeafletMap = null;
 let globalLeafletMap = null;
 let globalMarkerLayerGroup = null;
