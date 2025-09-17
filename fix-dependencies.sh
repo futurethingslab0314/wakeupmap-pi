@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 設定變數
-PROJECT_DIR="/home/future/pi/subjective-clock"
+PROJECT_DIR="/home/yutingpi/pi/subjective-clock"
 RASPBERRYPI_DSI_DIR="$PROJECT_DIR/raspberrypi-dsi"
 
 echo -e "${BLUE}📁 項目目錄: $PROJECT_DIR${NC}"

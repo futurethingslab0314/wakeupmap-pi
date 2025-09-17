@@ -1,10 +1,10 @@
 // Raspberry Pi 專用甦醒地圖腳本
-// 簡化版本，專為 800x480 螢幕和固定使用者 "future" 設計
+// 簡化版本，專為 800x480 螢幕和固定使用者 "yutingpi" 設計
 
 // 全域變數
 let db, auth;
 let currentDataIdentifier = null;
-let rawUserDisplayName = "future";
+let rawUserDisplayName = "yutingpi";
 let clockLeafletMap = null;
 let globalLeafletMap = null;
 let globalMarkerLayerGroup = null;
@@ -1052,8 +1052,8 @@ window.addEventListener('firebaseReady', async (event) => {
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            // 固定使用者名稱為 "future"
-            rawUserDisplayName = "future";
+            // 固定使用者名稱為 "yutingpi"
+            rawUserDisplayName = "yutingpi";
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
             // 更新顯示
@@ -1816,7 +1816,7 @@ window.addEventListener('firebaseReady', async (event) => {
             window.currentRecordId = docRef.id;
 
             // 2. 🔧 重要：同時調用 /api/save-record API 儲存到 artifacts 集合
-            // 這樣 index.html 才能查詢到 future 的資料！
+            // 這樣 index.html 才能查詢到 yutingpi 的資料！
             try {
                 console.log('📡 同時儲存到 artifacts 集合，確保 index.html 可查詢...');
                 
@@ -3482,9 +3482,9 @@ window.checkTrajectory = function() {
                 return false;
             }
 
-            // 強制設置用戶名稱為 "future"
+            // 強制設置用戶名稱為 "yutingpi"
             if (!rawUserDisplayName) {
-                rawUserDisplayName = "future";
+                rawUserDisplayName = "yutingpi";
                 console.log('🔧 強制設置用戶名稱為:', rawUserDisplayName);
             }
 
@@ -3627,7 +3627,7 @@ window.checkTrajectory = function() {
         if (userDataLoadAttempts >= maxUserDataLoadAttempts) {
             console.log('🔧 用戶資料載入失敗，嘗試強制顯示故事...');
             // 強制設置用戶資料
-            rawUserDisplayName = "future";
+            rawUserDisplayName = "yutingpi";
             if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
             
@@ -3646,10 +3646,10 @@ window.checkTrajectory = function() {
     // 啟動用戶資料載入監控
     setTimeout(monitorUserDataLoad, 10000); // 10秒後開始監控
 
-    // ✨ 新增：簡化的故事顯示邏輯 - 直接從Firebase抓取future用戶的最新故事
+    // ✨ 新增：簡化的故事顯示邏輯 - 直接從Firebase抓取yutingpi用戶的最新故事
     async function displayLatestStoryFromFirebase() {
         try {
-            console.log('📖 [簡化邏輯] 直接從Firebase獲取future用戶的最新故事...');
+            console.log('📖 [簡化邏輯] 直接從Firebase獲取yutingpi用戶的最新故事...');
             
             if (!db) {
                 console.log('⚠️ Firebase數據庫未初始化');
@@ -3667,7 +3667,7 @@ window.checkTrajectory = function() {
                 }
             }
 
-            // 查詢future用戶的最後一筆記錄（依照時間戳排序）
+            // 查詢yutingpi用戶的最後一筆記錄（依照時間戳排序）
             if (!window.firebaseSDK) {
                 console.error('❌ window.firebaseSDK 未初始化');
                 return false;
@@ -3680,7 +3680,7 @@ window.checkTrajectory = function() {
             try {
                 q = query(
                     collection(db, 'wakeup_records'),
-                    where('userId', '==', 'future'),
+                    where('userId', '==', 'yutingpi'),
                     orderBy('timestamp', 'desc'),  // 按時間戳降序排列
                     limit(1)  // 只取最新的一筆
                 );
@@ -3688,7 +3688,7 @@ window.checkTrajectory = function() {
                 console.log('⚠️ 索引查詢失敗，使用簡單查詢:', indexError);
                 q = query(
                     collection(db, 'wakeup_records'),
-                    where('userId', '==', 'future')
+                    where('userId', '==', 'yutingpi')
                 );
             }
 
@@ -3741,7 +3741,7 @@ window.checkTrajectory = function() {
                     console.log('⚠️ 最新記錄中沒有故事內容');
                 }
             } else {
-                console.log('⚠️ 沒有找到future用戶的記錄');
+                console.log('⚠️ 沒有找到yutingpi用戶的記錄');
             }
 
         } catch (error) {
@@ -3753,7 +3753,7 @@ window.checkTrajectory = function() {
                 const { collection, query, where, getDocs } = window.firebaseSDK;
                 const fallbackQuery = query(
                     collection(db, 'wakeup_records'),
-                    where('userId', '==', 'future')
+                    where('userId', '==', 'yutingpi')
                 );
                 
                 const fallbackSnapshot = await getDocs(fallbackQuery);
