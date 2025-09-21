@@ -195,10 +195,10 @@ class WebControllerDSI:
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');
-            if (findCityButton) {
+            if (findCityButton) {{
                 findCityButton.disabled = false;
                 console.log('🔧 強制啟用開始按鈕');
-            }
+            }}
             
             // 更新用戶顯示
             const currentUserIdSpan = document.getElementById('currentUserId');
@@ -207,10 +207,10 @@ class WebControllerDSI:
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = '{self.user_name}';
             
             // 確保 Firebase 配置存在
-            if (typeof firebaseConfig === 'undefined') {
+            if (typeof firebaseConfig === 'undefined') {{
                 console.log('🔧 設置預設 Firebase 配置');
-                window.firebaseConfig = window.defaultFirebaseConfig || {};
-            }
+                window.firebaseConfig = window.defaultFirebaseConfig || {{}};
+            }}
             
             console.log('🔧 用戶資料強制設置完成');
             """
