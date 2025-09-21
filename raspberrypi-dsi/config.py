@@ -130,9 +130,10 @@ API_ENDPOINTS = {
 }
 
 # 使用者設定
+import os
 USER_CONFIG = {
-    'display_name': 'future',
-    'identifier': 'future',
+    'display_name': os.getenv('USER_NAME'),  # 可從環境變數設定，預設為 yutingpi
+    'identifier': os.getenv('USER_NAME'),    # 可從環境變數設定，預設為 yutingpi  
     'group_name': 'Pi',
     'device_type': 'raspberry_pi_dsi'
 }

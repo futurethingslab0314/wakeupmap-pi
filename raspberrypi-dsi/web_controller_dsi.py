@@ -23,8 +23,8 @@ import platform
 logger = logging.getLogger(__name__)
 
 # 配置常數
-WEBSITE_URL = "https://subjective-clock.vercel.app/pi.html"
-USER_NAME = "future"
+WEBSITE_URL = os.getenv('WEBSITE_URL', "https://subjective-clock.vercel.app/pi.html")
+USER_NAME = os.getenv('USER_NAME')  # 可從環境變數設定
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
 
@@ -169,10 +169,10 @@ class WebControllerDSI:
             self.logger.info("正在載入用戶資料...")
             
             # 確保用戶名稱已設定
-            self.driver.execute_script("""
-                if (typeof rawUserDisplayName === 'undefined' || !rawUserDisplayName) {
-                    window.rawUserDisplayName = 'future';
-                }
+            self.driver.execute_script(f"""
+                if (typeof rawUserDisplayName === 'undefined' || !rawUserDisplayName) {{
+                    window.rawUserDisplayName = '{self.user_name}';
+                }}
             """)
             
             # 等待載入資料按鈕出現並可點擊
@@ -189,9 +189,9 @@ class WebControllerDSI:
             time.sleep(3)
             
             # 強制設置用戶資料和啟用按鈕
-            force_setup_js = """
+            force_setup_js = f"""
             // 強制設置用戶資料
-            window.rawUserDisplayName = 'future';
+            window.rawUserDisplayName = '{self.user_name}';
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');
@@ -203,8 +203,8 @@ class WebControllerDSI:
             // 更新用戶顯示
             const currentUserIdSpan = document.getElementById('currentUserId');
             const currentUserDisplayNameSpan = document.getElementById('currentUserDisplayName');
-            if (currentUserIdSpan) currentUserIdSpan.textContent = 'future';
-            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = 'future';
+            if (currentUserIdSpan) currentUserIdSpan.textContent = '{self.user_name}';
+            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = '{self.user_name}';
             
             // 確保 Firebase 配置存在
             if (typeof firebaseConfig === 'undefined') {

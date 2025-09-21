@@ -1,10 +1,10 @@
 // Raspberry Pi 專用甦醒地圖腳本
-// 簡化版本，專為 800x480 螢幕和固定使用者 "yutingpi" 設計
+// 簡化版本，專為 800x480 螢幕設計，用戶名由後端環境變數決定
 
 // 全域變數
 let db, auth;
 let currentDataIdentifier = null;
-let rawUserDisplayName = "yutingpi";
+let rawUserDisplayName = "yutingpi";  // 預設值，會被後端動態覆蓋
 let clockLeafletMap = null;
 let globalLeafletMap = null;
 let globalMarkerLayerGroup = null;
