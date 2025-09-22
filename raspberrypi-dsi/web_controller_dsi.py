@@ -186,9 +186,13 @@ class WebControllerDSI:
             
             # 確保用戶名稱已設定
             self.driver.execute_script(f"""
-                if (typeof rawUserDisplayName === 'undefined' || !rawUserDisplayName) {{
-                    window.rawUserDisplayName = '{self.user_name}';
-                }}
+                // 設定全域變數
+                window.rawUserDisplayName = '{self.user_name}';
+                
+                // 設定 localStorage（前端會從這裡讀取）
+                localStorage.setItem('wakeupmap_username', '{self.user_name}');
+                
+                console.log('🔧 後端設定使用者名稱:', '{self.user_name}');
             """)
             
             # 等待載入資料按鈕出現並可點擊
@@ -208,6 +212,7 @@ class WebControllerDSI:
             force_setup_js = f"""
             // 強制設置用戶資料
             window.rawUserDisplayName = '{self.user_name}';
+            localStorage.setItem('wakeupmap_username', '{self.user_name}');
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');
