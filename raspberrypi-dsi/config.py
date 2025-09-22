@@ -4,6 +4,8 @@
 WakeUpMap - 樹莓派4B DSI螢幕版本配置檔案
 """
 
+import os
+
 # =============================================================================
 # 硬體配置
 # =============================================================================
@@ -128,7 +130,6 @@ API_ENDPOINTS = {
 }
 
 # 使用者設定
-import os
 USER_CONFIG = {
     'display_name': os.getenv('USER_NAME', 'unknown'),  # 從環境變數設定，預設為 unknown
     'identifier': os.getenv('USER_NAME', 'unknown'),    # 從環境變數設定，預設為 unknown  
