@@ -55,25 +55,19 @@ SPEAKER_CONFIG = {
     'notes': '連接到樹莓派3.5mm音頻插孔或GPIO音頻針腳'
 }
 
-# TTS (文字轉語音) 配置
+# TTS (文字轉語音) 配置 - 僅使用 OpenAI TTS
 TTS_CONFIG = {
-    'engine': 'festival',  # 預設引擎，可通過 setup_openai_tts.py 升級
+    'engine': 'openai',  # 強制使用 OpenAI TTS
     'speed': 140,  # 語速稍微放慢（words per minute）
-    'voice_id': 'female',  # 女性聲音
-    'voice_name': 'kal_diphone',  # Festival 聲音名稱
+    'voice_id': 'nova',  # OpenAI 女性聲音
+    'voice_name': 'nova',  # OpenAI 聲音名稱
     'cache_enabled': True,  # 啟用音頻快取
     'cache_dir': '/tmp/wakeupmap_audio_cache',
-    # Festival 特定配置
-    'festival_voice': 'kal_diphone',  # 修復：移除 voice_ 前綴
-    'festival_female_voices': [
-        'kal_diphone',     # 預設女性聲音
-        'cmu_us_slt_arctic_hts',  # 高質量女性聲音（如果可用）
-        'nitech_us_slt_arctic_hts'  # 備用女性聲音
-    ],
+    
     # OpenAI TTS 配置
-    'openai_api_key': '',  # 需要設定 OpenAI API 金鑰
-    'openai_model': 'tts-1-hd',  # 'tts-1' 或 'tts-1-hd' (高品質)
-    'openai_voice': 'nova',  # 'alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'
+    'openai_api_key': os.getenv('OPENAI_API_KEY', ''),  # 從環境變數讀取 OpenAI API 金鑰
+    'openai_model': 'tts-1-hd',  # 高品質模型
+    'openai_voice': 'nova',  # 使用 Nova 語音（最自然的女性聲音）
     'openai_speed': 1.0,  # 0.25 到 4.0
     
     # Nova 整合模式
@@ -83,6 +77,10 @@ TTS_CONFIG = {
     'audio_quality': 'high',
     'enable_audio_enhancement': False,  # 暫時關閉音質增強以避免格式問題
     'sample_rate_override': 22050,  # 提高採樣率
+    
+    # 禁用備用引擎
+    'disable_fallback': True,  # 禁用所有備用語音引擎
+    'require_openai': True,  # 強制要求 OpenAI API
 }
 
 # =============================================================================

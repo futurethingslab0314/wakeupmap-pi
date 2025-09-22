@@ -100,27 +100,35 @@ def setup_api_key():
         print("❌ 無效的 API 金鑰格式")
         return None
     
-    # 更新 config.py
-    config_file = Path(__file__).parent / 'config.py'
+    # 更新 .env 檔案
+    env_file = Path(__file__).parent.parent / '.env'
     
     try:
-        with open(config_file, 'r', encoding='utf-8') as f:
-            content = f.read()
+        # 讀取現有的 .env 檔案
+        env_content = ""
+        if env_file.exists():
+            with open(env_file, 'r', encoding='utf-8') as f:
+                env_content = f.read()
         
-        # 替換 API 金鑰和引擎
-        new_content = content.replace(
-            "'openai_api_key': '',",
-            f"'openai_api_key': '{api_key}',"
-        ).replace(
-            "'engine': 'festival',",
-            "'engine': 'openai',"
-        )
+        # 檢查是否已經有 OPENAI_API_KEY
+        if 'OPENAI_API_KEY=' in env_content:
+            # 更新現有的金鑰
+            import re
+            env_content = re.sub(
+                r'OPENAI_API_KEY=.*',
+                f'OPENAI_API_KEY={api_key}',
+                env_content
+            )
+        else:
+            # 添加新的金鑰
+            env_content += f'\nOPENAI_API_KEY={api_key}\n'
         
-        with open(config_file, 'w', encoding='utf-8') as f:
-            f.write(new_content)
+        # 寫入 .env 檔案
+        with open(env_file, 'w', encoding='utf-8') as f:
+            f.write(env_content)
         
-        print("✅ API 金鑰已保存到 config.py")
-        print("✅ TTS 引擎已切換為 OpenAI")
+        print("✅ API 金鑰已保存到 .env 檔案")
+        print("✅ 請重新載入環境變數: source .env")
         return api_key
         
     except Exception as e:
