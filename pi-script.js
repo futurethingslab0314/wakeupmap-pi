@@ -4,7 +4,7 @@
 // 全域變數
 let db, auth;
 let currentDataIdentifier = null;
-let rawUserDisplayName = "yutingpi";  // 預設值，會被後端動態覆蓋
+let rawUserDisplayName = null;  // 將由使用者輸入設定
 let clockLeafletMap = null;
 let globalLeafletMap = null;
 let globalMarkerLayerGroup = null;
@@ -85,27 +85,126 @@ function updateResultData(data) {
 
 // 🔧 確保初始狀態正確設定
 function ensureInitialState() {
-    console.log('🔧 確保初始狀態為 waiting');
+    console.log('🔧 確保初始狀態為 userSetup');
+    const userSetupStateEl = document.getElementById('userSetupState');
     const waitingStateEl = document.getElementById('waitingState');
     const loadingStateEl = document.getElementById('loadingState');
     const resultStateEl = document.getElementById('resultState');
     const errorStateEl = document.getElementById('errorState');
     
     // 強制移除所有狀態的 active 類別
-    [waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
+    [userSetupStateEl, waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
         if (el) {
             el.classList.remove('active');
         }
     });
     
-    // 確保 waiting 狀態顯示
-    if (waitingStateEl) {
-        waitingStateEl.classList.add('active');
-        console.log('✅ 強制設定 waiting 狀態為 active');
+    // 檢查是否已經設定過使用者名稱
+    const savedUserName = localStorage.getItem('wakeupmap_username');
+    if (savedUserName) {
+        // 如果已經設定過，直接進入等待狀態
+        rawUserDisplayName = savedUserName;
+        if (waitingStateEl) {
+            waitingStateEl.classList.add('active');
+            console.log('✅ 使用者名稱已存在，進入 waiting 狀態');
+        }
+        currentState = 'waiting';
+    } else {
+        // 如果沒有設定過，顯示使用者設定介面
+        if (userSetupStateEl) {
+            userSetupStateEl.classList.add('active');
+            console.log('✅ 顯示使用者設定介面');
+        } else {
+            console.error('❌ userSetupStateEl 未找到');
+        }
+        currentState = 'userSetup';
     }
     
+    window.currentState = currentState;
+    console.log('🔧 全域狀態已設定為:', currentState);
+}
+
+// 初始化使用者設定功能
+function initializeUserSetup() {
+    console.log('👤 初始化使用者設定功能');
+    
+    if (confirmUserNameButton && userNameInputField) {
+        // 確認按鈕點擊事件
+        confirmUserNameButton.addEventListener('click', () => {
+            const userName = userNameInputField.value.trim();
+            if (userName) {
+                setUserName(userName);
+            } else {
+                alert('請輸入使用者名稱');
+            }
+        });
+        
+        // Enter 鍵確認
+        userNameInputField.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const userName = userNameInputField.value.trim();
+                if (userName) {
+                    setUserName(userName);
+                } else {
+                    alert('請輸入使用者名稱');
+                }
+            }
+        });
+        
+        console.log('✅ 使用者設定事件已綁定');
+    } else {
+        console.error('❌ 使用者設定元素未找到');
+    }
+}
+
+// 設定使用者名稱
+function setUserName(userName) {
+    console.log('👤 設定使用者名稱:', userName);
+    
+    // 儲存到 localStorage
+    localStorage.setItem('wakeupmap_username', userName);
+    
+    // 更新全域變數
+    rawUserDisplayName = userName;
+    
+    // 更新隱藏輸入框
+    if (userNameInput) {
+        userNameInput.value = userName;
+    }
+    
+    // 更新顯示元素
+    if (currentUserIdSpan) {
+        currentUserIdSpan.textContent = userName;
+    }
+    if (currentUserDisplayNameSpan) {
+        currentUserDisplayNameSpan.textContent = userName;
+    }
+    
+    // 切換到等待狀態
+    switchToWaitingState();
+    
+    console.log('✅ 使用者名稱設定完成');
+}
+
+// 切換到等待狀態
+function switchToWaitingState() {
+    console.log('🔄 切換到等待狀態');
+    
+    // 隱藏使用者設定狀態
+    if (userSetupState) {
+        userSetupState.classList.remove('active');
+    }
+    
+    // 顯示等待狀態
+    if (waitingState) {
+        waitingState.classList.add('active');
+    }
+    
+    // 更新全域狀態
     currentState = 'waiting';
     window.currentState = currentState;
+    
+    console.log('✅ 已切換到等待狀態');
 }
 
 // 設定基本的全域函數（確保始終可用）
@@ -221,6 +320,9 @@ let userNameInput, setUserNameButton, currentUserIdSpan, currentUserDisplayNameS
 let historyListUl, historyMapContainerDiv, historyDebugInfoSmall, refreshHistoryButton;
 let globalDateInput, refreshGlobalMapButton, globalTodayMapContainerDiv, globalTodayDebugInfoSmall;
 let groupNameInput, groupFilterSelect, connectionStatus;
+
+// 新增：使用者設定相關元素
+let userSetupState, userNameInputField, confirmUserNameButton, waitingState;
 
 // 新增：顯示狀態元素
 let waitingStateEl, resultStateEl, loadingStateEl, errorStateEl;
@@ -634,6 +736,12 @@ window.addEventListener('firebaseReady', async (event) => {
         setUserNameButton = document.getElementById('setUserNameButton');
         currentUserIdSpan = document.getElementById('currentUserId');
         currentUserDisplayNameSpan = document.getElementById('currentUserDisplayName');
+        
+        // 新增：使用者設定相關元素
+        userSetupState = document.getElementById('userSetupState');
+        userNameInputField = document.getElementById('userNameInput');
+        confirmUserNameButton = document.getElementById('confirmUserNameButton');
+        waitingState = document.getElementById('waitingState');
         historyListUl = document.getElementById('historyList');
         historyMapContainerDiv = document.getElementById('historyMapContainer');
         historyDebugInfoSmall = document.getElementById('historyDebugInfo');
@@ -1052,8 +1160,10 @@ window.addEventListener('firebaseReady', async (event) => {
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            // 固定使用者名稱為 "yutingpi"
-            rawUserDisplayName = "yutingpi";
+            // 使用已設定的使用者名稱
+            if (!rawUserDisplayName) {
+                rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+            }
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
             // 更新顯示
@@ -2586,6 +2696,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 🔧 首先確保初始狀態正確
     ensureInitialState();
     
+    // 初始化使用者設定功能
+    initializeUserSetup();
+    
     console.log('🔍 初始狀態檢查:', {
         firebaseConfig: !!window.firebaseConfig,
         firebaseSDK: !!window.firebaseSDK,
@@ -3482,10 +3595,10 @@ window.checkTrajectory = function() {
                 return false;
             }
 
-            // 強制設置用戶名稱為 "yutingpi"
+            // 使用已設定的使用者名稱
             if (!rawUserDisplayName) {
-                rawUserDisplayName = "yutingpi";
-                console.log('🔧 強制設置用戶名稱為:', rawUserDisplayName);
+                rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                console.log('🔧 使用已設定的使用者名稱:', rawUserDisplayName);
             }
 
             // 查詢所有記錄（避免認證問題）
@@ -3626,8 +3739,10 @@ window.checkTrajectory = function() {
         
         if (userDataLoadAttempts >= maxUserDataLoadAttempts) {
             console.log('🔧 用戶資料載入失敗，嘗試強制顯示故事...');
-            // 強制設置用戶資料
-            rawUserDisplayName = "yutingpi";
+            // 使用已設定的使用者名稱
+            if (!rawUserDisplayName) {
+                rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+            }
             if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
             
@@ -3667,7 +3782,7 @@ window.checkTrajectory = function() {
                 }
             }
 
-            // 查詢yutingpi用戶的最後一筆記錄（依照時間戳排序）
+            // 查詢當前用戶的最後一筆記錄（依照時間戳排序）
             if (!window.firebaseSDK) {
                 console.error('❌ window.firebaseSDK 未初始化');
                 return false;
@@ -3680,7 +3795,7 @@ window.checkTrajectory = function() {
             try {
                 q = query(
                     collection(db, 'wakeup_records'),
-                    where('userId', '==', 'yutingpi'),
+                    where('userId', '==', rawUserDisplayName),
                     orderBy('timestamp', 'desc'),  // 按時間戳降序排列
                     limit(1)  // 只取最新的一筆
                 );
@@ -3688,7 +3803,7 @@ window.checkTrajectory = function() {
                 console.log('⚠️ 索引查詢失敗，使用簡單查詢:', indexError);
                 q = query(
                     collection(db, 'wakeup_records'),
-                    where('userId', '==', 'yutingpi')
+                    where('userId', '==', rawUserDisplayName)
                 );
             }
 
@@ -3741,7 +3856,7 @@ window.checkTrajectory = function() {
                     console.log('⚠️ 最新記錄中沒有故事內容');
                 }
             } else {
-                console.log('⚠️ 沒有找到yutingpi用戶的記錄');
+                console.log('⚠️ 沒有找到用戶的記錄:', rawUserDisplayName);
             }
 
         } catch (error) {
@@ -3753,7 +3868,7 @@ window.checkTrajectory = function() {
                 const { collection, query, where, getDocs } = window.firebaseSDK;
                 const fallbackQuery = query(
                     collection(db, 'wakeup_records'),
-                    where('userId', '==', 'yutingpi')
+                    where('userId', '==', rawUserDisplayName)
                 );
                 
                 const fallbackSnapshot = await getDocs(fallbackQuery);
