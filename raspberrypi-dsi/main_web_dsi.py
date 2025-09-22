@@ -13,6 +13,25 @@ import time
 from typing import Optional
 from pathlib import Path
 
+# 自動載入 .env 檔案
+def load_env_file():
+    """載入 .env 檔案到環境變數"""
+    env_file = Path(__file__).parent.parent / '.env'
+    if env_file.exists():
+        print(f"🔧 載入環境變數檔案: {env_file}")
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key] = value
+        print("✅ 環境變數載入完成")
+    else:
+        print(f"⚠️ .env 檔案不存在: {env_file}")
+
+# 在導入其他模組前載入環境變數
+load_env_file()
+
 # 導入自定義模組
 from config import (
     LOGGING_CONFIG, DEBUG_MODE, AUTOSTART_CONFIG, BUTTON_CONFIG,
