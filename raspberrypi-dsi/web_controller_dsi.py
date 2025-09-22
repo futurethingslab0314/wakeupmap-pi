@@ -7,7 +7,23 @@
 import os
 import time
 import logging
+from pathlib import Path
 from selenium import webdriver
+
+# 自動載入 .env 檔案
+def load_env_file():
+    """載入 .env 檔案到環境變數"""
+    env_file = Path(__file__).parent.parent / '.env'
+    if env_file.exists():
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key] = value
+
+# 載入環境變數
+load_env_file()
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -24,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 # 配置常數
 WEBSITE_URL = os.getenv('WEBSITE_URL', "https://subjective-clock.vercel.app/pi.html")
-USER_NAME = os.getenv('USER_NAME')  # 可從環境變數設定
+USER_NAME = os.getenv('USER_NAME', 'unknown')  # 從環境變數設定，預設為 unknown
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
 
