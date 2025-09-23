@@ -287,52 +287,8 @@ window.startTheDay = function() {
             console.error('❌ 狀態切換失敗:', e);
         }
         
-        // 設置重試機制
-        let retryCount = 0;
-        const maxRetries = 10;
-        const retryInterval = 1000; // 1秒
-        
-        const retryTimer = setInterval(() => {
-            retryCount++;
-            console.log(`🔄 重試 ${retryCount}/${maxRetries} - 檢查 Firebase 狀態`);
-            
-            if (window.firebaseSDK && window.firebaseConfig) {
-                console.log('✅ Firebase 已就緒，重新觸發甦醒流程');
-                clearInterval(retryTimer);
-                
-                // 檢查是否有完整版本的 startTheDay 函數
-                if (typeof window.startTheDay === 'function' && window.startTheDay.isFullVersion) {
-                    window.startTheDay();
-                } else {
-                    // 手動觸發 firebaseReady 事件
-                    window.dispatchEvent(new CustomEvent('firebaseReady'));
-                    setTimeout(() => {
-                        if (typeof window.startTheDay === 'function') {
-                            window.startTheDay();
-                        }
-                    }, 1000);
-                }
-            } else if (retryCount >= maxRetries) {
-                console.error('❌ Firebase 初始化失敗，已達最大重試次數');
-                clearInterval(retryTimer);
-                
-                // 顯示錯誤狀態
-                try {
-                    const errorStateEl = document.getElementById('errorState');
-                    const errorMessageEl = document.getElementById('errorMessage');
-                    const loadingStateEl = document.getElementById('loadingState');
-                    
-                    if (loadingStateEl) loadingStateEl.classList.remove('active');
-                    if (errorStateEl) errorStateEl.classList.add('active');
-                    if (errorMessageEl) {
-                        errorMessageEl.textContent = 'Firebase 初始化失敗，請重新載入頁面';
-                    }
-                } catch (e) {
-                    console.error('❌ 顯示錯誤狀態失敗:', e);
-                }
-            }
-        }, retryInterval);
-        
+        // 移除重試機制，直接返回
+        console.log('⚠️ Firebase 未就緒，但不再重試，繼續執行基本功能');
         return false;
     }
     
