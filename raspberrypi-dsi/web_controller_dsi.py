@@ -198,7 +198,7 @@ class WebControllerDSI:
                 // 設定 localStorage（前端會從這裡讀取）
                 localStorage.setItem('wakeupmap_username', '{clean_user_name}');
                 
-                console.log('🔧 後端設定使用者名稱:', '{self.user_name}');
+                console.log('🔧 後端設定使用者名稱:', '{clean_user_name}');
             """)
             
             # 等待載入資料按鈕出現並可點擊
@@ -217,8 +217,8 @@ class WebControllerDSI:
             # 強制設置用戶資料和啟用按鈕
             force_setup_js = f"""
             // 強制設置用戶資料
-            window.rawUserDisplayName = '{self.user_name}';
-            localStorage.setItem('wakeupmap_username', '{self.user_name}');
+            window.rawUserDisplayName = '{clean_user_name}';
+            localStorage.setItem('wakeupmap_username', '{clean_user_name}');
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');
@@ -230,8 +230,8 @@ class WebControllerDSI:
             // 更新用戶顯示
             const currentUserIdSpan = document.getElementById('currentUserId');
             const currentUserDisplayNameSpan = document.getElementById('currentUserDisplayName');
-            if (currentUserIdSpan) currentUserIdSpan.textContent = '{self.user_name}';
-            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = '{self.user_name}';
+            if (currentUserIdSpan) currentUserIdSpan.textContent = '{clean_user_name}';
+            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = '{clean_user_name}';
             
             // 確保 Firebase 配置存在
             if (typeof firebaseConfig === 'undefined') {{

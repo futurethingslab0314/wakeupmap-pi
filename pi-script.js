@@ -3676,10 +3676,15 @@ window.checkTrajectory = function() {
                 return false;
             }
 
-            // 使用已設定的使用者名稱
+            // 使用後端設定的使用者名稱
             if (!rawUserDisplayName) {
-                rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
-                console.log('🔧 使用已設定的使用者名稱:', rawUserDisplayName);
+                const backendUserName = getBackendUserName();
+                if (!backendUserName) {
+                    console.error('❌ 無法從後端獲取使用者名稱');
+                    return false;
+                }
+                rawUserDisplayName = backendUserName;
+                console.log('🔧 使用後端設定的使用者名稱:', rawUserDisplayName);
             }
 
             // 查詢所有記錄（避免認證問題）
