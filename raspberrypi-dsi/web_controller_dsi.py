@@ -195,8 +195,8 @@ class WebControllerDSI:
                 // 設定全域變數
                 window.rawUserDisplayName = '{clean_user_name}';
                 
-                // 設定 localStorage（前端會從這裡讀取）
-                localStorage.setItem('wakeupmap_username', '{clean_user_name}');
+                // 移除：避免污染前端快取
+                // localStorage.setItem('wakeupmap_username', '{clean_user_name}');
                 
                 console.log('🔧 後端設定使用者名稱:', '{clean_user_name}');
             """)
@@ -218,7 +218,8 @@ class WebControllerDSI:
             force_setup_js = f"""
             // 強制設置用戶資料
             window.rawUserDisplayName = '{clean_user_name}';
-            localStorage.setItem('wakeupmap_username', '{clean_user_name}');
+            // 移除：避免污染前端快取
+            // localStorage.setItem('wakeupmap_username', '{clean_user_name}');
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');

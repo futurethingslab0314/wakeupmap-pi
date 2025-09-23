@@ -2968,18 +2968,9 @@ async function loadAndDrawTrajectory() {
         }
         
         console.log('🗺️ 開始載入軌跡線數據...');
-        
-        // 確保使用正確的使用者名稱
-        if (!rawUserDisplayName) {
-            const backendUserName = getBackendUserName();
-            if (!backendUserName) {
-                console.error('❌ 無法獲取使用者名稱，取消軌跡載入');
-                return;
-            }
-            rawUserDisplayName = backendUserName;
-        }
-        
-        console.log('🗺️ 載入軌跡，使用者名稱:', rawUserDisplayName);
+        console.log('backendUserName:', document.getElementById('userName')?.value);
+        console.log('rawUserDisplayName:', rawUserDisplayName);
+        console.log('localStorage username:', localStorage.getItem('wakeupmap_username'));
         
         // 確保軌跡圖層存在
         if (!trajectoryLayer) {
@@ -3851,36 +3842,27 @@ window.checkTrajectory = function() {
         }
         
         userDataLoadAttempts++;
-        console.log(`⚠️ 用戶資料載入檢查第 ${userDataLoadAttempts} 次`);
+        if (userDataLoadAttempts > maxUserDataLoadAttempts) {
+            console.warn('⚠️ 用戶資料載入重試次數達上限');
+            return;
+        }
         
-        if (userDataLoadAttempts >= maxUserDataLoadAttempts) {
-            console.log('🔧 用戶資料載入失敗，嘗試強制顯示故事...');
-            // 優先從後端 API 獲取用戶名稱
+        setTimeout(async () => {
+            console.log('🔄 重新嘗試載入使用者資料...');
+            console.log('backendUserName:', document.getElementById('userName')?.value);
+            console.log('rawUserDisplayName:', rawUserDisplayName);
+            console.log('localStorage username:', localStorage.getItem('wakeupmap_username'));
+            
+            // 僅嘗試從後端獲取，不使用 localStorage 備援
             if (!rawUserDisplayName) {
                 const userNameFromBackend = await getUserNameFromBackend();
                 if (!userNameFromBackend) {
-                    // 如果後端 API 獲取失敗，才使用 localStorage
-                    const backendUserName = getBackendUserName();
-                    if (!backendUserName) {
-                        console.error('❌ 無法從後端獲取使用者名稱');
-                        return false;
-                    }
-                    rawUserDisplayName = backendUserName;
+                    console.warn('⚠️ 後端尚未提供使用者名稱，稍後重試');
                 }
             }
             if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
-            
-            // 嘗試強制顯示故事
-            setTimeout(() => {
-                if (window.forceDisplayStoryFromFirebase) {
-                    forceDisplayStoryFromFirebase();
-                }
-            }, 2000);
-        } else {
-            // 繼續監控
-            setTimeout(monitorUserDataLoad, 5000);
-        }
+        }, 500);
     }
 
     // 啟動用戶資料載入監控
