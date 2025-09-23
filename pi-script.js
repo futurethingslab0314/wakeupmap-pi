@@ -29,26 +29,34 @@ window.currentState = currentState;
 // 🔧 移除舊的 localStorage 使用者名稱設定
 localStorage.removeItem('wakeupmap_username');
 
-// 從後端 API 獲取用戶名稱
+// 從後端環境變數獲取用戶名稱（.env 中的 USER_NAME）
 async function getUserNameFromBackend() {
     try {
+        // 從隱藏的 input 欄位讀取後端設定的 USER_NAME
         const hiddenUserNameInput = document.getElementById('userName');
-        const userName = hiddenUserNameInput ? hiddenUserNameInput.value.trim() : null;
-        
-        if (userName && userName !== 'unknown') {
-            rawUserDisplayName = userName;
-            // 更新相關的 UI 元素
-            if (userNameInput) userNameInput.value = userName;
-            if (currentUserIdSpan) currentUserIdSpan.textContent = userName;
-            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = userName;
-            console.log('✅ 使用者名稱:', userName);
-            return true;
+        if (!hiddenUserNameInput) {
+            console.error('❌ 找不到隱藏的 userName 輸入欄位');
+            return false;
         }
+
+        const userName = hiddenUserNameInput.value.trim();
+        if (!userName || userName === 'unknown') {
+            console.error('❌ 後端未正確設定 USER_NAME 環境變數');
+            return false;
+        }
+
+        // 設定全域變數
+        rawUserDisplayName = userName;
         
-        console.warn('⚠️ 未找到有效的使用者名稱');
-        return false;
+        // 更新所有相關的 UI 元素
+        if (userNameInput) userNameInput.value = userName;
+        if (currentUserIdSpan) currentUserIdSpan.textContent = userName;
+        if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = userName;
+        
+        console.log('✅ 使用後端設定的使用者名稱:', userName);
+        return true;
     } catch (error) {
-        console.error('❌ 讀取使用者名稱失敗:', error);
+        console.error('❌ 讀取後端使用者名稱失敗:', error);
         return false;
     }
 }
@@ -181,33 +189,32 @@ function initializeUserSetup() {
     }
 }
 
-// 設定使用者名稱
+// 設定使用者名稱（只用於顯示，實際值由後端 .env 的 USER_NAME 決定）
 function setUserName(userName) {
-    console.log('👤 設定使用者名稱:', userName);
+    console.log('👤 顯示使用者名稱:', userName);
     
-    // 儲存到 localStorage
-    localStorage.setItem('wakeupmap_username', userName);
-    
-    // 更新全域變數
-    rawUserDisplayName = userName;
-    
-    // 更新隱藏輸入框
-    if (userNameInput) {
-        userNameInput.value = userName;
+    // 使用後端設定的使用者名稱
+    const backendUserName = document.getElementById('userName').value.trim();
+    if (!backendUserName || backendUserName === 'unknown') {
+        console.error('❌ 後端未正確設定 USER_NAME 環境變數');
+        return;
     }
     
-    // 更新顯示元素
+    // 更新全域變數（使用後端的值）
+    rawUserDisplayName = backendUserName;
+    
+    // 更新顯示元素（使用後端的值）
     if (currentUserIdSpan) {
-        currentUserIdSpan.textContent = userName;
+        currentUserIdSpan.textContent = backendUserName;
     }
     if (currentUserDisplayNameSpan) {
-        currentUserDisplayNameSpan.textContent = userName;
+        currentUserDisplayNameSpan.textContent = backendUserName;
     }
     
     // 切換到等待狀態
     switchToWaitingState();
     
-    console.log('✅ 使用者名稱設定完成');
+    console.log('✅ 使用後端設定的使用者名稱:', backendUserName);
 }
 
 // 切換到等待狀態
@@ -490,7 +497,7 @@ window.addEventListener('piStoryReady', (event) => {
         // 🔧 修復：使用與軌跡相同的表 userHistory 來計算 Day 數
         const q = query(
             collection(db, 'userHistory'),
-            where('userDisplayName', '==', rawUserDisplayName)
+            where('userId', '==', rawUserDisplayName)
             // 移除 orderBy 避免索引需求，只需要數量
         );
         getDocs(q).then(querySnapshot => {
@@ -1920,6 +1927,7 @@ window.addEventListener('firebaseReady', async (event) => {
 
             const recordData = {
                 userId: rawUserDisplayName,
+                userDisplayName: rawUserDisplayName,
                 displayName: rawUserDisplayName,
                 groupName: currentGroupName,
                 city: cityData.name,
@@ -3143,7 +3151,7 @@ window.checkTrajectory = function() {
             // 查詢 userHistory 中的歷史記錄（暫時簡化查詢避免索引需求）
             const historyQuery = query(
                 collection(db, 'userHistory'),
-                where('userDisplayName', '==', rawUserDisplayName)
+                where('userId', '==', rawUserDisplayName)
                 // 暫時移除 orderBy 避免索引需求，改為在客戶端排序
             );
 
