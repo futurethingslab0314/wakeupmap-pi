@@ -1208,15 +1208,28 @@ window.addEventListener('firebaseReady', async (event) => {
             if (!rawUserDisplayName) {
                 const userNameFromBackend = await getUserNameFromBackend();
                 if (!userNameFromBackend) {
-                    // 如果後端 API 獲取失敗，才使用 localStorage
+                    // 如果後端 API 獲取失敗，改從隱藏欄位再讀一次（不使用 localStorage 備援）
                     const backendUserName = getBackendUserName();
                     if (!backendUserName) {
                         console.error('❌ 無法從後端獲取使用者名稱');
+                        setTimeout(loadUserData, 500);
                         return false;
                     }
                     rawUserDisplayName = backendUserName;
                 }
             }
+
+            // 防呆：如果目前名稱為 future/unknown/空值，先不視為成功，延後重試
+            const backendUserNameNow = getBackendUserName();
+            const candidateName = rawUserDisplayName || backendUserNameNow;
+            if (!candidateName || candidateName === 'future' || candidateName === 'unknown') {
+                console.warn('⚠️ 讀到暫時無效的使用者名稱，稍後重試:', candidateName);
+                setTimeout(loadUserData, 500);
+                return;
+            }
+            // 以有效名稱繼續
+            rawUserDisplayName = candidateName;
+
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
             // 更新顯示
