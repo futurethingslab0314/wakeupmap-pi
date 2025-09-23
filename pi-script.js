@@ -1215,19 +1215,20 @@ window.addEventListener('firebaseReady', async (event) => {
                         setTimeout(loadUserData, 500);
                         return false;
                     }
-                    rawUserDisplayName = backendUserName;
+                    // 注意：先不要指派到 rawUserDisplayName，待通過有效性檢查後再賦值
+                    var fallbackUserName = backendUserName;
                 }
             }
 
             // 防呆：如果目前名稱為 future/unknown/空值，先不視為成功，延後重試
             const backendUserNameNow = getBackendUserName();
-            const candidateName = rawUserDisplayName || backendUserNameNow;
+            const candidateName = (typeof fallbackUserName !== 'undefined' ? fallbackUserName : rawUserDisplayName) || backendUserNameNow;
             if (!candidateName || candidateName === 'future' || candidateName === 'unknown') {
                 console.warn('⚠️ 讀到暫時無效的使用者名稱，稍後重試:', candidateName);
                 setTimeout(loadUserData, 500);
                 return;
             }
-            // 以有效名稱繼續
+            // 以有效名稱繼續（此時才賦值）
             rawUserDisplayName = candidateName;
 
             if (userNameInput) userNameInput.value = rawUserDisplayName;
@@ -3850,8 +3851,8 @@ window.checkTrajectory = function() {
     const maxUserDataLoadAttempts = 3;
     
     function monitorUserDataLoad() {
-        // 檢查是否載入成功
-        if (rawUserDisplayName && rawUserDisplayName !== '') {
+        // 檢查是否載入成功（需為有效名稱）
+        if (rawUserDisplayName && rawUserDisplayName !== 'future' && rawUserDisplayName !== 'unknown') {
             console.log('✅ 用戶資料已載入:', rawUserDisplayName);
             return;
         }
