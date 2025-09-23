@@ -67,7 +67,7 @@
             </div>
             
             <!-- 等待狀態 -->
-            <div id="waitingState" class="state waiting-state">
+            <div id="waitingState" class="state waiting-state active">
                 <!-- 中央內容框 -->
                 <div class="waiting-content-box">
                     <h1 class="press-button-title blinking-text">PRESS THE BUTTON</h1>
@@ -159,7 +159,7 @@
         <!-- 隱藏元素 (用於保持相容性) -->
         <div style="display: none;">
             <input type="hidden" id="groupName" value="">
-            <input type="hidden" id="userName" value="yutingpi">
+            <input type="hidden" id="userName" value="future">
             
             <!-- 虛擬按鈕元素，供原有 JavaScript 相容 -->
             <button id="setUserNameButton" class="load-button">載入資料</button>
@@ -169,8 +169,8 @@
             <div id="resultText" class="result-text"></div>
             <div id="debugInfo" class="debug-info"></div>
             <div id="debugInfoSmall" class="debug-info-small"></div>
-            <div id="currentUserId">yutingpi</div>
-            <div id="currentUserDisplayName">yutingpi</div>
+            <div id="currentUserId">future</div>
+            <div id="currentUserDisplayName">future</div>
             
             <!-- 分頁相關隱藏元素 -->
             <ul id="historyList"></ul>
@@ -203,6 +203,27 @@
 
     <!-- 1. 首先載入 Firebase 配置 -->
     <script src="/api/config"></script>
+    <script>
+        // 在後端配置載入後，將 USER_NAME 注入隱藏欄位與顯示元素
+        (function() {
+            function applyBackendUserName() {
+                var name = window.backendUserName;
+                if (name && name !== 'future' && name !== 'unknown') {
+                    var input = document.getElementById('userName');
+                    if (input) input.value = name;
+                    var currentId = document.getElementById('currentUserId');
+                    if (currentId) currentId.textContent = name;
+                    var currentDisplay = document.getElementById('currentUserDisplayName');
+                    if (currentDisplay) currentDisplay.textContent = name;
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applyBackendUserName);
+            } else {
+                applyBackendUserName();
+            }
+        })();
+    </script>
 
     <!-- 2. 載入 Firebase SDK 並初始化 -->
     <script type="module">
@@ -217,34 +238,36 @@
 
         // 等待 Firebase 配置載入
         function initializeFirebase() {
-            // 直接嘗試初始化，不再重試
-            try {
-                console.log('🔥 開始初始化 Firebase...');
-                const app = initializeApp(window.firebaseConfig || {});
-                
-                // 打包所有 Firebase 功能供主腳本使用
-                window.firebaseSDK = {
-                    initializeApp,
-                    getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-                    getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-                    serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-                };
-                
-                console.log('✅ Firebase SDK 已準備就緒');
-                
-                // 發送 Firebase 就緒事件
-                window.dispatchEvent(new CustomEvent('firebaseReady'));
-            } catch (error) {
-                console.error('❌ Firebase 初始化失敗:', error);
-                // 即使失敗也要設置基本的 SDK
-                window.firebaseSDK = {
-                    initializeApp,
-                    getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-                    getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-                    serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-                };
-                // 直接發送事件，讓程式繼續執行
-                window.dispatchEvent(new CustomEvent('firebaseReady'));
+            if (window.firebaseConfig) {
+                try {
+                    console.log('🔥 開始初始化 Firebase...');
+                    const app = initializeApp(window.firebaseConfig);
+                    
+                    // 打包所有 Firebase 功能供主腳本使用
+                    window.firebaseSDK = {
+                        initializeApp,
+                        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
+                        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
+                        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
+                    };
+                    
+                    console.log('✅ Firebase SDK 已準備就緒');
+                    
+                    // 發送 Firebase 就緒事件
+                    window.dispatchEvent(new CustomEvent('firebaseReady'));
+                } catch (error) {
+                    console.error('❌ Firebase 初始化失敗:', error);
+                    // 即使失敗也要設置基本的 SDK
+                    window.firebaseSDK = {
+                        initializeApp,
+                        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
+                        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
+                        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
+                    };
+                }
+            } else {
+                console.warn('⚠️ Firebase 配置尚未載入，2秒後重試...');
+                setTimeout(initializeFirebase, 2000);
             }
         }
 

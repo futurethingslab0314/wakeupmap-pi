@@ -46,10 +46,12 @@ export default function handler(req, res) {
     console.log('🔧 專案ID:', firebaseConfig.projectId);
     console.log('🔧 認證域名:', firebaseConfig.authDomain);
 
-    // 設定全域變數並返回配置
+    // 設定全域變數並返回配置（包含 USER_NAME 給前端使用）
     const configScript = `
         window.firebaseConfig = ${JSON.stringify(firebaseConfig)};
+        window.backendUserName = ${JSON.stringify(process.env.USER_NAME || '')};
         console.log('🔥 Firebase 配置已載入:', window.firebaseConfig);
+        console.log('👤 後端 USER_NAME 已載入:', window.backendUserName);
     `;
 
     res.setHeader('Content-Type', 'application/javascript');
