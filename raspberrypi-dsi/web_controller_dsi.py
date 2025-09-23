@@ -21,6 +21,7 @@ def load_env_file():
                 if line and not line.startswith('#') and '=' in line:
                     key, value = line.split('=', 1)
                     os.environ[key] = value
+                    print(f"載入環境變數: {key}={value}")
 
 # 載入環境變數
 load_env_file()
@@ -170,7 +171,12 @@ class WebControllerDSI:
             self.logger.info(f"正在設定使用者：{self.user_name}")
             
             # 對於 pi.html，使用者名稱是隱藏輸入框，我們直接用 JavaScript 設定
-            self.driver.execute_script(f"document.getElementById('userName').value = '{self.user_name}';")
+            # 確保使用者名稱沒有多餘空格
+            clean_user_name = self.user_name.strip()
+            self.logger.info(f"設定使用者名稱: '{clean_user_name}'")
+            
+            # 設定到前端的隱藏欄位
+            self.driver.execute_script(f"document.getElementById('userName').value = '{clean_user_name}';")
             
             self.logger.info("使用者名稱設定成功")
             return True
@@ -187,10 +193,10 @@ class WebControllerDSI:
             # 確保用戶名稱已設定
             self.driver.execute_script(f"""
                 // 設定全域變數
-                window.rawUserDisplayName = '{self.user_name}';
+                window.rawUserDisplayName = '{clean_user_name}';
                 
                 // 設定 localStorage（前端會從這裡讀取）
-                localStorage.setItem('wakeupmap_username', '{self.user_name}');
+                localStorage.setItem('wakeupmap_username', '{clean_user_name}');
                 
                 console.log('🔧 後端設定使用者名稱:', '{self.user_name}');
             """)

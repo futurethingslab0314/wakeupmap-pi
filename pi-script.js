@@ -4,8 +4,30 @@
 // 全域變數
 let db, auth;
 let currentDataIdentifier = null;
-let rawUserDisplayName = null;  // 將由使用者輸入設定
+let rawUserDisplayName = null;  // 只能從後端 .env 的 USER_NAME 設定
 let clockLeafletMap = null;
+
+// 強制從後端讀取使用者名稱（.env 中的 USER_NAME）
+function getBackendUserName() {
+    const hiddenUserNameInput = document.getElementById('userName');
+    if (!hiddenUserNameInput) {
+        console.error('❌ 找不到隱藏的 userName 輸入欄位，無法讀取後端設定的 USER_NAME');
+        return null;
+    }
+    
+    // 從隱藏欄位讀取後端設定的 USER_NAME
+    const userName = hiddenUserNameInput.value;
+    
+    // 檢查是否為有效的使用者名稱
+    if (!userName || userName === 'unknown' || userName === 'future') {
+        console.error('❌ 後端未正確設定 USER_NAME 環境變數，目前值:', userName);
+        console.error('請在 .env 檔案中設定 USER_NAME=yutingpi');
+        return null;
+    }
+    
+    console.log('✅ 使用後端設定的 USER_NAME:', userName);
+    return userName;
+}
 let globalLeafletMap = null;
 let globalMarkerLayerGroup = null;
 let historyLeafletMap = null;
@@ -32,16 +54,8 @@ localStorage.removeItem('wakeupmap_username');
 // 從後端環境變數獲取用戶名稱（.env 中的 USER_NAME）
 async function getUserNameFromBackend() {
     try {
-        // 從隱藏的 input 欄位讀取後端設定的 USER_NAME
-        const hiddenUserNameInput = document.getElementById('userName');
-        if (!hiddenUserNameInput) {
-            console.error('❌ 找不到隱藏的 userName 輸入欄位');
-            return false;
-        }
-
-        const userName = hiddenUserNameInput.value.trim();
-        if (!userName || userName === 'unknown') {
-            console.error('❌ 後端未正確設定 USER_NAME 環境變數');
+        const userName = getBackendUserName();
+        if (!userName) {
             return false;
         }
 
@@ -194,9 +208,8 @@ function setUserName(userName) {
     console.log('👤 顯示使用者名稱:', userName);
     
     // 使用後端設定的使用者名稱
-    const backendUserName = document.getElementById('userName').value.trim();
-    if (!backendUserName || backendUserName === 'unknown') {
-        console.error('❌ 後端未正確設定 USER_NAME 環境變數');
+    const backendUserName = getBackendUserName();
+    if (!backendUserName) {
         return;
     }
     
@@ -1196,7 +1209,12 @@ window.addEventListener('firebaseReady', async (event) => {
                 const userNameFromBackend = await getUserNameFromBackend();
                 if (!userNameFromBackend) {
                     // 如果後端 API 獲取失敗，才使用 localStorage
-                    rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                    const backendUserName = getBackendUserName();
+                    if (!backendUserName) {
+                        console.error('❌ 無法從後端獲取使用者名稱');
+                        return false;
+                    }
+                    rawUserDisplayName = backendUserName;
                 }
             }
             if (userNameInput) userNameInput.value = rawUserDisplayName;
@@ -3786,7 +3804,12 @@ window.checkTrajectory = function() {
                 const userNameFromBackend = await getUserNameFromBackend();
                 if (!userNameFromBackend) {
                     // 如果後端 API 獲取失敗，才使用 localStorage
-                    rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                    const backendUserName = getBackendUserName();
+                    if (!backendUserName) {
+                        console.error('❌ 無法從後端獲取使用者名稱');
+                        return false;
+                    }
+                    rawUserDisplayName = backendUserName;
                 }
             }
             if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
