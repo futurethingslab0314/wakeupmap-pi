@@ -1943,10 +1943,17 @@ window.addEventListener('firebaseReady', async (event) => {
                 console.log(`  記錄 ${index + 1}: Day ${data.day}, 日期: ${data.date}, 城市: ${data.city}`);
             });
 
+            // 確保使用正確的使用者名稱（從後端 .env 的 USER_NAME）
+            const backendUserName = getBackendUserName();
+            if (!backendUserName) {
+                console.error('❌ 無法獲取後端使用者名稱，取消儲存記錄');
+                return;
+            }
+            
             const recordData = {
-                userId: rawUserDisplayName,
-                userDisplayName: rawUserDisplayName,
-                displayName: rawUserDisplayName,
+                userId: backendUserName,
+                userDisplayName: backendUserName,
+                displayName: backendUserName,
                 groupName: currentGroupName,
                 city: cityData.name,
                 country: cityData.country,
@@ -1971,6 +1978,20 @@ window.addEventListener('firebaseReady', async (event) => {
 
             console.log('📊 準備保存的記錄:', recordData);
 
+            // 確保使用正確的使用者名稱（從後端 .env 的 USER_NAME）
+            const backendUserName = getBackendUserName();
+            if (!backendUserName) {
+                console.error('❌ 無法獲取後端使用者名稱，取消儲存記錄');
+                return;
+            }
+            
+            // 更新記錄中的使用者名稱
+            recordData.userId = backendUserName;
+            recordData.userDisplayName = backendUserName;
+            recordData.displayName = backendUserName;
+            
+            console.log('📊 使用後端使用者名稱:', backendUserName);
+            
             // 1. 儲存到 wakeup_records 集合（前端直寫）
             const docRef = await addDoc(collection(db, 'wakeup_records'), recordData);
             console.log('✅ 記錄已儲存至 wakeup_records 集合');
