@@ -2952,6 +2952,9 @@ function initMainInteractiveMap(lat, lon, city, country) {
 
 // 載入並繪製軌跡線
 async function loadAndDrawTrajectory() {
+    console.log('backendUserName:', document.getElementById('userName')?.value)
+    console.log('rawUserDisplayName:', rawUserDisplayName)
+    console.log('localStorage username:', localStorage.getItem('wakeupmap_username'))
     try {
         // 檢查必要條件
         if (!db) {
@@ -3166,6 +3169,9 @@ window.checkTrajectory = function() {
 
     // 載入歷史軌跡
     async function loadHistoryTrajectory() {
+        console.log('backendUserName:', document.getElementById('userName')?.value)
+        console.log('rawUserDisplayName:', rawUserDisplayName)
+        console.log('localStorage username:', localStorage.getItem('wakeupmap_username'))
         console.log('🔄 loadHistoryTrajectory 函數被調用');
         console.log('🔍 Firebase db 狀態:', !!db);
         console.log('🔍 Firebase auth 狀態:', !!auth);
