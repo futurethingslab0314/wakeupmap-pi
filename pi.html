@@ -230,36 +230,34 @@
 
         // 等待 Firebase 配置載入
         function initializeFirebase() {
-            if (window.firebaseConfig) {
-                try {
-                    console.log('🔥 開始初始化 Firebase...');
-                    const app = initializeApp(window.firebaseConfig);
-                    
-                    // 打包所有 Firebase 功能供主腳本使用
-                    window.firebaseSDK = {
-                        initializeApp,
-                        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-                        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-                        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-                    };
-                    
-                    console.log('✅ Firebase SDK 已準備就緒');
-                    
-                    // 發送 Firebase 就緒事件
-                    window.dispatchEvent(new CustomEvent('firebaseReady'));
-                } catch (error) {
-                    console.error('❌ Firebase 初始化失敗:', error);
-                    // 即使失敗也要設置基本的 SDK
-                    window.firebaseSDK = {
-                        initializeApp,
-                        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-                        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-                        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-                    };
-                }
-            } else {
-                console.warn('⚠️ Firebase 配置尚未載入，2秒後重試...');
-                setTimeout(initializeFirebase, 2000);
+            // 直接嘗試初始化，不再重試
+            try {
+                console.log('🔥 開始初始化 Firebase...');
+                const app = initializeApp(window.firebaseConfig || {});
+                
+                // 打包所有 Firebase 功能供主腳本使用
+                window.firebaseSDK = {
+                    initializeApp,
+                    getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
+                    getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
+                    serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
+                };
+                
+                console.log('✅ Firebase SDK 已準備就緒');
+                
+                // 發送 Firebase 就緒事件
+                window.dispatchEvent(new CustomEvent('firebaseReady'));
+            } catch (error) {
+                console.error('❌ Firebase 初始化失敗:', error);
+                // 即使失敗也要設置基本的 SDK
+                window.firebaseSDK = {
+                    initializeApp,
+                    getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
+                    getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
+                    serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
+                };
+                // 直接發送事件，讓程式繼續執行
+                window.dispatchEvent(new CustomEvent('firebaseReady'));
             }
         }
 

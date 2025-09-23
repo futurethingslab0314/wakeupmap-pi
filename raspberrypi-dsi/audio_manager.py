@@ -621,7 +621,7 @@ class AudioManager:
             self.logger.info(f"🔥 [Firebase上傳] 準備上傳數據: {api_data}")
             
             # 調用save-record API
-            api_url = 'https://subjective-clock.vercel.app/api/save-record'
+            api_url = 'https://wakeupupmap-pi.vercel.app/api/save-record'
             response = requests.post(
                 api_url,
                 json=api_data,

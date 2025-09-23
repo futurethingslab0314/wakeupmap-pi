@@ -1248,6 +1248,18 @@ window.addEventListener('firebaseReady', async (event) => {
             setUserNameButton.textContent = '載入完成';
             console.log('✅ 使用者資料載入完成:', rawUserDisplayName);
             
+            // 🗺️ 自動載入使用者的歷史地圖資料
+            console.log('🗺️ 開始自動載入使用者歷史地圖資料...');
+            setTimeout(async () => {
+                try {
+                    await loadHistoryTrajectory();
+                    await loadAndDrawTrajectory();
+                    console.log('✅ 使用者歷史地圖資料載入完成');
+                } catch (error) {
+                    console.error('❌ 載入使用者歷史地圖資料失敗:', error);
+                }
+            }, 1000); // 延遲1秒確保地圖已初始化
+            
             setTimeout(() => {
                 if (setUserNameButton) {
                     setUserNameButton.textContent = '載入資料';
@@ -4220,53 +4232,7 @@ window.checkTrajectory = function() {
     // 暴露緊急生成函數
     window.emergencyStoryGeneration = emergencyStoryGeneration;
 
-// 🚨 最終強制確保初始狀態正確 - 延遲執行以覆蓋任何衝突
-setTimeout(() => {
-    console.log('🚨 執行最終強制初始狀態檢查...');
-    
-    const waitingStateEl = document.getElementById('waitingState');
-    const loadingStateEl = document.getElementById('loadingState');
-    const resultStateEl = document.getElementById('resultState');
-    const errorStateEl = document.getElementById('errorState');
-    
-    // 檢查當前狀態
-    console.log('🔍 當前狀態檢查:', {
-        waitingActive: waitingStateEl?.classList.contains('active'),
-        loadingActive: loadingStateEl?.classList.contains('active'),
-        resultActive: resultStateEl?.classList.contains('active'),
-        errorActive: errorStateEl?.classList.contains('active'),
-        currentState: window.currentState
-    });
-    
-    // 🔧 只在沒有任何狀態活躍時才強制設定等待狀態
-    const hasActiveState = 
-        waitingStateEl?.classList.contains('active') ||
-        loadingStateEl?.classList.contains('active') ||
-        resultStateEl?.classList.contains('active') ||
-        errorStateEl?.classList.contains('active');
-    
-    if (!hasActiveState || window.currentState === 'waiting') {
-        console.log('🔧 沒有活躍狀態，設定等待狀態');
-        
-        // 移除所有狀態
-        [loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
-            if (el) {
-                el.classList.remove('active');
-            }
-        });
-        
-        // 顯示等待狀態
-        if (waitingStateEl) {
-            waitingStateEl.classList.add('active');
-            console.log('✅ 等待狀態已設定');
-        }
-        
-        window.currentState = 'waiting';
-    } else {
-        console.log('🔧 保持當前活躍狀態:', window.currentState, '不強制設定等待狀態');
-    }
-    
-}, 2000); // 延遲 2 秒執行，確保在所有其他初始化完成後
+// 移除：不再需要定時狀態檢查，直接在需要時設定狀態
 
 // 新增：按下按鈕後才載入歷史軌跡的開關
 let enableHistoryRendering = true;
