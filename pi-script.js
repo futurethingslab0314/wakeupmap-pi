@@ -3173,10 +3173,12 @@ window.checkTrajectory = function() {
 
     // 載入歷史軌跡
     async function loadHistoryTrajectory() {
-        console.log('backendUserName:', document.getElementById('userName')?.value)
-        console.log('rawUserDisplayName:', rawUserDisplayName)
-        console.log('localStorage username:', localStorage.getItem('wakeupmap_username'))
         console.log('🔄 loadHistoryTrajectory 函數被調用');
+        // 若尚未允許，跳過
+        if (!enableHistoryRendering) {
+            console.log('⏸️ 尚未按下按鈕，暫不載入歷史軌跡');
+            return;
+        }
         console.log('🔍 Firebase db 狀態:', !!db);
         console.log('🔍 Firebase auth 狀態:', !!auth);
         
@@ -4259,3 +4261,6 @@ setTimeout(() => {
     }
     
 }, 2000); // 延遲 2 秒執行，確保在所有其他初始化完成後
+
+// 新增：按下按鈕後才載入歷史軌跡的開關
+let enableHistoryRendering = false;
