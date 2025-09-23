@@ -3175,19 +3175,15 @@ window.checkTrajectory = function() {
     // 載入歷史軌跡
     async function loadHistoryTrajectory() {
         console.log('🔄 loadHistoryTrajectory 函數被調用');
-        // 若尚未允許，跳過
-        if (!enableHistoryRendering) {
-            console.log('⏸️ 尚未按下按鈕，暫不載入歷史軌跡');
-            return;
-        }
+        // 取消：未按鈕前不載入的限制
         console.log('🔍 Firebase db 狀態:', !!db);
         console.log('🔍 Firebase auth 狀態:', !!auth);
         
         // 🔑 決定查詢用使用者（不覆寫全域）
         const backendUserName = getBackendUserName();
         const effectiveUser = backendUserName || rawUserDisplayName;
-        if (!effectiveUser || effectiveUser === 'future' || effectiveUser === 'unknown') {
-            console.warn('⏸️ 使用者名稱尚未有效，跳過歷史軌跡查詢:', effectiveUser);
+        if (!effectiveUser) {
+            console.warn('⏸️ 使用者名稱尚未取得，跳過歷史軌跡查詢');
             return;
         }
         console.log('🧭 查詢歷史軌跡使用者:', effectiveUser);
@@ -4273,4 +4269,4 @@ setTimeout(() => {
 }, 2000); // 延遲 2 秒執行，確保在所有其他初始化完成後
 
 // 新增：按下按鈕後才載入歷史軌跡的開關
-let enableHistoryRendering = false;
+let enableHistoryRendering = true;
