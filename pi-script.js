@@ -2966,6 +2966,18 @@ async function loadAndDrawTrajectory() {
         
         console.log('🗺️ 開始載入軌跡線數據...');
         
+        // 確保使用正確的使用者名稱
+        if (!rawUserDisplayName) {
+            const backendUserName = getBackendUserName();
+            if (!backendUserName) {
+                console.error('❌ 無法獲取使用者名稱，取消軌跡載入');
+                return;
+            }
+            rawUserDisplayName = backendUserName;
+        }
+        
+        console.log('🗺️ 載入軌跡，使用者名稱:', rawUserDisplayName);
+        
         // 確保軌跡圖層存在
         if (!trajectoryLayer) {
             console.log('🗺️ 創建新的軌跡圖層');
@@ -3186,6 +3198,18 @@ window.checkTrajectory = function() {
 
         try {
             console.log('📍 開始載入歷史軌跡...');
+            
+            // 確保使用正確的使用者名稱
+            if (!rawUserDisplayName) {
+                const backendUserName = getBackendUserName();
+                if (!backendUserName) {
+                    console.error('❌ 無法獲取使用者名稱，取消軌跡載入');
+                    return;
+                }
+                rawUserDisplayName = backendUserName;
+            }
+            
+            console.log('📍 載入軌跡，使用者名稱:', rawUserDisplayName);
             
             // 查詢 userHistory 中的歷史記錄（暫時簡化查詢避免索引需求）
             const historyQuery = query(
