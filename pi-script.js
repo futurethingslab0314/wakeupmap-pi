@@ -26,6 +26,27 @@ let historyMarkersLayer = null; // 歷史點位圖層
 let currentState = 'waiting'; // waiting, loading, result, error
 window.currentState = currentState;
 
+// 從後端 API 獲取用戶名稱
+async function getUserNameFromBackend() {
+    try {
+        const response = await fetch('/api/get-user-name');
+        const data = await response.json();
+        if (data.userName) {
+            rawUserDisplayName = data.userName;
+            // 更新相關的 UI 元素
+            if (userNameInput) userNameInput.value = rawUserDisplayName;
+            if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
+            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
+            console.log('🔧 後端設定使用者名稱:', rawUserDisplayName);
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('❌ 無法從後端獲取使用者名稱:', error);
+        return false;
+    }
+}
+
 // 🔧 全域 updateResultData 函數，確保在所有作用域都可訪問
 function updateResultData(data) {
     console.log('📊 updateResultData 被調用，數據:', data);
@@ -1160,9 +1181,13 @@ window.addEventListener('firebaseReady', async (event) => {
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            // 使用已設定的使用者名稱
+            // 優先從後端 API 獲取用戶名稱
             if (!rawUserDisplayName) {
-                rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                const userNameFromBackend = await getUserNameFromBackend();
+                if (!userNameFromBackend) {
+                    // 如果後端 API 獲取失敗，才使用 localStorage
+                    rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                }
             }
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
@@ -2690,14 +2715,20 @@ window.addEventListener('error', (event) => {
 });
 
 // 載入狀態指示
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('📄 DOM 載入完成，等待 Firebase...');
     
     // 🔧 首先確保初始狀態正確
     ensureInitialState();
     
-    // 初始化使用者設定功能
-    initializeUserSetup();
+    // 從後端獲取用戶名稱
+    const userNameFromBackend = await getUserNameFromBackend();
+    
+    // 只有在後端 API 獲取失敗時才初始化使用者設定功能
+    if (!userNameFromBackend) {
+        // 初始化使用者設定功能
+        initializeUserSetup();
+    }
     
     console.log('🔍 初始狀態檢查:', {
         firebaseConfig: !!window.firebaseConfig,
@@ -3739,9 +3770,13 @@ window.checkTrajectory = function() {
         
         if (userDataLoadAttempts >= maxUserDataLoadAttempts) {
             console.log('🔧 用戶資料載入失敗，嘗試強制顯示故事...');
-            // 使用已設定的使用者名稱
+            // 優先從後端 API 獲取用戶名稱
             if (!rawUserDisplayName) {
-                rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                const userNameFromBackend = await getUserNameFromBackend();
+                if (!userNameFromBackend) {
+                    // 如果後端 API 獲取失敗，才使用 localStorage
+                    rawUserDisplayName = localStorage.getItem('wakeupmap_username') || 'unknown';
+                }
             }
             if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
