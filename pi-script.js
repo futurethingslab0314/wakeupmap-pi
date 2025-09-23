@@ -26,23 +26,29 @@ let historyMarkersLayer = null; // 歷史點位圖層
 let currentState = 'waiting'; // waiting, loading, result, error
 window.currentState = currentState;
 
+// 🔧 移除舊的 localStorage 使用者名稱設定
+localStorage.removeItem('wakeupmap_username');
+
 // 從後端 API 獲取用戶名稱
 async function getUserNameFromBackend() {
     try {
-        const response = await fetch('/api/get-user-name');
-        const data = await response.json();
-        if (data.userName) {
-            rawUserDisplayName = data.userName;
+        const hiddenUserNameInput = document.getElementById('userName');
+        const userName = hiddenUserNameInput ? hiddenUserNameInput.value.trim() : null;
+        
+        if (userName && userName !== 'unknown') {
+            rawUserDisplayName = userName;
             // 更新相關的 UI 元素
-            if (userNameInput) userNameInput.value = rawUserDisplayName;
-            if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
-            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
-            console.log('🔧 後端設定使用者名稱:', rawUserDisplayName);
+            if (userNameInput) userNameInput.value = userName;
+            if (currentUserIdSpan) currentUserIdSpan.textContent = userName;
+            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = userName;
+            console.log('✅ 使用者名稱:', userName);
             return true;
         }
+        
+        console.warn('⚠️ 未找到有效的使用者名稱');
         return false;
     } catch (error) {
-        console.error('❌ 無法從後端獲取使用者名稱:', error);
+        console.error('❌ 讀取使用者名稱失敗:', error);
         return false;
     }
 }
@@ -120,14 +126,11 @@ function ensureInitialState() {
         }
     });
     
-    // 檢查是否已經設定過使用者名稱
-    const savedUserName = localStorage.getItem('wakeupmap_username');
-    if (savedUserName) {
-        // 如果已經設定過，直接進入等待狀態
-        rawUserDisplayName = savedUserName;
+    // 檢查使用者名稱
+    if (rawUserDisplayName && rawUserDisplayName !== 'unknown') {
         if (waitingStateEl) {
             waitingStateEl.classList.add('active');
-            console.log('✅ 使用者名稱已存在，進入 waiting 狀態');
+            console.log('✅ 進入等待狀態');
         }
         currentState = 'waiting';
     } else {
