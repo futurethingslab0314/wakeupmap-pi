@@ -3183,6 +3183,15 @@ window.checkTrajectory = function() {
         console.log('🔍 Firebase db 狀態:', !!db);
         console.log('🔍 Firebase auth 狀態:', !!auth);
         
+        // 🔑 決定查詢用使用者（不覆寫全域）
+        const backendUserName = getBackendUserName();
+        const effectiveUser = backendUserName || rawUserDisplayName;
+        if (!effectiveUser || effectiveUser === 'future' || effectiveUser === 'unknown') {
+            console.warn('⏸️ 使用者名稱尚未有效，跳過歷史軌跡查詢:', effectiveUser);
+            return;
+        }
+        console.log('🧭 查詢歷史軌跡使用者:', effectiveUser);
+        
         // 🔧 自動修復Firebase初始化問題
         if (!db && window.firebaseSDK && window.firebaseSDK.getFirestore) {
             console.log('🔧 自動修復：初始化Firebase db實例...');
@@ -3227,7 +3236,7 @@ window.checkTrajectory = function() {
             // 查詢 userHistory 中的歷史記錄（暫時簡化查詢避免索引需求）
             const historyQuery = query(
                 collection(db, 'userHistory'),
-                where('userId', '==', rawUserDisplayName)
+                where('userId', '==', effectiveUser)
                 // 暫時移除 orderBy 避免索引需求，改為在客戶端排序
             );
 
