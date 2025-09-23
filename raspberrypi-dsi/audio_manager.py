@@ -600,10 +600,13 @@ class AudioManager:
             import requests
             import json
             
+            # 從環境變數獲取使用者名稱
+            user_name = os.getenv('USER_NAME', 'unknown')
+            
             # 構建上傳到Firebase的數據
             api_data = {
-                'userDisplayName': 'future',  # Pi用戶固定為future
-                'dataIdentifier': 'future',
+                'userDisplayName': user_name,  # 從 .env 的 USER_NAME 讀取
+                'dataIdentifier': user_name,
                 'groupName': 'Pi',  # Pi群組
                 'city': story_content.get('city', 'Unknown City'),
                 'country': story_content.get('country', 'Unknown Country'),
