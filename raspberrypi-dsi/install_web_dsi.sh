@@ -277,7 +277,7 @@ create_env_config() {
     # 創建 .env 檔案
     cat > .env << EOF
 # 甦醒地圖 DSI版本網頁模式配置
-WEBSITE_URL=https://subjective-clock.vercel.app/
+WEBSITE_URL=https://wakeupmap-pi.vercel.app/pi.html
 USER_NAME=yutingpi
 BROWSER_COMMAND=$BROWSER_CMD
 EOF
