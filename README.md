@@ -5,7 +5,7 @@
 #### repository說明
 repository意思是儲存空間。
 
-#### 如果我基本環境設置完成。
+#### 如果我之前下載過且將基本環境都設置過，會怎麼辦？
 不需要進行raspberry pi 的基本環境建置，只需要把自己的改完的github 程式碼成功下載至自己的raspberrypi，以及更改 .env, desktop設定即完成。
 
 ## **安裝前準備2：連結你的github至vercel**
