@@ -267,7 +267,10 @@
     <script src="http://localhost:8000/local-env.js"></script>
     
     <!-- 5. 載入主要應用程式腳本 -->
-    <script src="pi-script.js"></script>
+    <script>
+      window.env = window.env || {};
+      window.env.USER_NAME = 'yutingpi';
+    </script>
     
     <script>
         // 地圖初始化功能
