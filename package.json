@@ -1,7 +1,7 @@
 {
-    "name": "subjective-clock",
+    "name": "WakeUpMap",
     "version": "1.0.0",
-    "description": "A subjective world clock map that generates adventure stories based on location and time.",
+    "description": "A wakeupmap that generates adventure stories based on location and time.",
     "main": "index.html",
     "scripts": {
       "test": "echo \"Error: no test specified\" && exit 1",
