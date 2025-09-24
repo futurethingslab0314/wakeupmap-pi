@@ -1,4 +1,4 @@
-### **本檔案為AI建議，還未查證**
+# 🍓 Raspberry Pi QA(本章節還未驗證與更新)
 
 
 ### **問題 1: Firebase 配置錯誤**
@@ -208,4 +208,53 @@ sudo usermod -a -G gpio $USER  # 將用戶加入 gpio 群組
 # 重新登入後再測試
 
 deactivate
+```
+
+
+## 🛠️ 故障排除
+
+### 查看日誌
+```bash
+# 查看服務日誌
+sudo journalctl -u wakeupmap-dsi -f
+
+# 查看最近的錯誤
+sudo journalctl -u wakeupmap-dsi --since "1 hour ago"
+```
+
+### 常見問題
+
+#### 1. 螢幕無顯示
+```bash
+# 檢查DSI配置
+cat /boot/config.txt | grep -A 10 "WakeUpMap DSI"
+
+# 重新啟動圖形服務
+sudo systemctl restart display-manager
+```
+
+#### 2. 按鈕無反應
+```bash
+# 測試按鈕
+cd /home/pi/wakeupmap-dsi
+python3 button_handler.py
+
+# 檢查GPIO權限
+groups pi | grep gpio
+```
+
+#### 3. 網路連線問題
+```bash
+# 測試API連線
+python3 api_client.py
+
+# 檢查網路連線
+ping -c 3 google.com
+```
+
+#### 4. 字體顯示問題
+```bash
+# 重新安裝字體
+sudo apt install -y fonts-noto-cjk
+sudo fc-cache -fv
 ```
