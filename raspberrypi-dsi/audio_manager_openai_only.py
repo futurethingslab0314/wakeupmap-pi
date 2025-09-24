@@ -211,7 +211,7 @@ class AudioManager:
             
             # 調用 API
             response = requests.post(
-                TTS_CONFIG.get('story_api_url', 'https://wake-up-map-mix.vercel.app/api/generatePiStory'),
+                TTS_CONFIG.get('story_api_url', 'https://wakeupmap-pi.vercel.app/api/generatePiStory'),
                 json=api_data,
                 timeout=30
             )
