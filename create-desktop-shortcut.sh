@@ -4,7 +4,7 @@
 echo "🖥️ 正在創建甦醒地圖桌面快捷方式..."
 
 # 設定變數
-USER_HOME="/home/future"
+USER_HOME="/home/yutingpi"
 DESKTOP_DIR="$USER_HOME/Desktop"
 PROJECT_DIR="$USER_HOME/pi/subjective-clock"
 SHORTCUT_FILE="$DESKTOP_DIR/甦醒地圖.desktop"
@@ -21,8 +21,8 @@ Name=甦醒地圖
 Name[en]=WakeUp Map
 Comment=啟動甦醒地圖主控程式
 Comment[en]=Start WakeUp Map Main Controller
-Exec=/home/future/pi/subjective-clock/raspberrypi-dsi/start-wakeup-map.sh
-Icon=/home/future/pi/subjective-clock/icon-192x192.png
+Exec=/home/yutingpi/pi/subjective-clock/raspberrypi-dsi/start-wakeup-map.sh
+Icon=/home/yutingpi/pi/subjective-clock/icon-192x192.png
 Terminal=true
 StartupNotify=true
 Categories=Utility;
@@ -43,7 +43,7 @@ cat > "$STARTUP_SCRIPT" << 'EOF'
 # 🚀 甦醒地圖啟動腳本
 
 # 設定變數
-PROJECT_DIR="/home/future/pi/subjective-clock"
+PROJECT_DIR="/home/yutingpi/pi/subjective-clock"
 RASPBERRYPI_DSI_DIR="$PROJECT_DIR/raspberrypi-dsi"
 LOG_FILE="$PROJECT_DIR/wakeup-map.log"
 

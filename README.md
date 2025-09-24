@@ -38,8 +38,8 @@ sudo apt install python3-pip git -y
 ### 2. 下載程式
 ```bash
 # 克隆程式碼
-git clone [your-pi-version-repo] ~/subjective-clock
-cd ~/subjective-clock
+git clone [your-pi-version-repo] ~/wakeupmap-pi
+cd ~/wakeupmap-pi
 ```
 
 ### 3. 安裝依賴

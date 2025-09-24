@@ -1,12 +1,27 @@
 import admin from 'firebase-admin';
+import fs from 'fs';
 
 // 初始化 Firebase Admin SDK（如果尚未初始化）
 if (!admin.apps.length) {
+    // 從環境變數或檔案獲取私鑰
+    let privateKey;
+    if (process.env.PRIVATE_KEY_PATH && fs.existsSync(process.env.PRIVATE_KEY_PATH)) {
+        // 方式 A: 從檔案讀取私鑰
+        privateKey = fs.readFileSync(process.env.PRIVATE_KEY_PATH, 'utf8');
+        console.log('🔑 從檔案載入 Firebase 私鑰:', process.env.PRIVATE_KEY_PATH);
+    } else if (process.env.FIREBASE_PRIVATE_KEY) {
+        // 方式 B: 從環境變數讀取私鑰
+        privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+        console.log('🔑 從環境變數載入 Firebase 私鑰');
+    } else {
+        console.error('❌ 找不到 Firebase 私鑰：請設定 PRIVATE_KEY_PATH 或 FIREBASE_PRIVATE_KEY');
+    }
+
     // 從環境變數獲取服務帳戶金鑰
     const serviceAccount = {
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        privateKey: privateKey,
     };
 
     admin.initializeApp({
@@ -75,9 +90,20 @@ export default async function handler(req, res) {
     console.log('  - Firebase Admin 應用程式數量:', admin.apps.length);
     console.log('  - 專案ID:', process.env.FIREBASE_PROJECT_ID);
     console.log('  - 客戶端電子郵件存在:', !!process.env.FIREBASE_CLIENT_EMAIL);
-    console.log('  - 私鑰存在:', !!process.env.FIREBASE_PRIVATE_KEY);
+    console.log('  - 私鑰檔案路徑:', process.env.PRIVATE_KEY_PATH);
+    console.log('  - 環境變數私鑰存在:', !!process.env.FIREBASE_PRIVATE_KEY);
     console.log('  - 客戶端電子郵件值:', process.env.FIREBASE_CLIENT_EMAIL);
-    console.log('  - 私鑰前50字符:', process.env.FIREBASE_PRIVATE_KEY?.substring(0, 50));
+    
+    // 檢查私鑰來源
+    if (process.env.PRIVATE_KEY_PATH) {
+        console.log('  - 私鑰檔案存在:', require('fs').existsSync(process.env.PRIVATE_KEY_PATH));
+        if (require('fs').existsSync(process.env.PRIVATE_KEY_PATH)) {
+            const keyContent = require('fs').readFileSync(process.env.PRIVATE_KEY_PATH, 'utf8');
+            console.log('  - 私鑰檔案前50字符:', keyContent.substring(0, 50));
+        }
+    } else if (process.env.FIREBASE_PRIVATE_KEY) {
+        console.log('  - 環境變數私鑰前50字符:', process.env.FIREBASE_PRIVATE_KEY?.substring(0, 50));
+    }
 
     // 測試 Firestore 連接
     try {
@@ -103,7 +129,7 @@ export default async function handler(req, res) {
                 appsLength: admin.apps.length,
                 projectId: process.env.FIREBASE_PROJECT_ID,
                 hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-                hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY
+                hasPrivateKey: !!(process.env.FIREBASE_PRIVATE_KEY || (process.env.PRIVATE_KEY_PATH && require('fs').existsSync(process.env.PRIVATE_KEY_PATH)))
             });
 
             // 🎯 查詢正確的 Firebase 資料結構

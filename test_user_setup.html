@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=800, initial-scale=1.0">
+    <title>使用者設定測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f2f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #4d714f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #5a8a5c;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>使用者設定功能測試</h1>
+        
+        <div class="test-section">
+            <h3>1. 測試 localStorage 功能</h3>
+            <button class="test-button" onclick="testLocalStorage()">測試 localStorage</button>
+            <button class="test-button" onclick="clearLocalStorage()">清除 localStorage</button>
+            <div id="localStorageResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. 測試使用者名稱設定</h3>
+            <input type="text" id="testUserName" placeholder="輸入測試使用者名稱" value="testuser">
+            <button class="test-button" onclick="testSetUserName()">設定使用者名稱</button>
+            <div id="userNameResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. 測試狀態切換</h3>
+            <button class="test-button" onclick="testStateSwitch()">測試狀態切換</button>
+            <div id="stateResult" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. 模擬完整流程</h3>
+            <button class="test-button" onclick="testFullFlow()">模擬完整流程</button>
+            <div id="fullFlowResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模擬 pi-script.js 中的函數
+        let rawUserDisplayName = null;
+        let currentState = 'userSetup';
+        
+        function testLocalStorage() {
+            const result = document.getElementById('localStorageResult');
+            try {
+                // 測試寫入
+                localStorage.setItem('wakeupmap_username', 'testuser');
+                
+                // 測試讀取
+                const saved = localStorage.getItem('wakeupmap_username');
+                
+                result.innerHTML = `✅ localStorage 測試成功<br>
+                    寫入: testuser<br>
+                    讀取: ${saved}<br>
+                    狀態: ${saved === 'testuser' ? '成功' : '失敗'}`;
+            } catch (error) {
+                result.innerHTML = `❌ localStorage 測試失敗: ${error.message}`;
+            }
+        }
+        
+        function clearLocalStorage() {
+            const result = document.getElementById('localStorageResult');
+            try {
+                localStorage.removeItem('wakeupmap_username');
+                result.innerHTML = '✅ localStorage 已清除';
+            } catch (error) {
+                result.innerHTML = `❌ 清除失敗: ${error.message}`;
+            }
+        }
+        
+        function testSetUserName() {
+            const result = document.getElementById('userNameResult');
+            const userName = document.getElementById('testUserName').value.trim();
+            
+            if (!userName) {
+                result.innerHTML = '❌ 請輸入使用者名稱';
+                return;
+            }
+            
+            try {
+                // 模擬 setUserName 函數
+                localStorage.setItem('wakeupmap_username', userName);
+                rawUserDisplayName = userName;
+                currentState = 'waiting';
+                
+                result.innerHTML = `✅ 使用者名稱設定成功<br>
+                    使用者名稱: ${rawUserDisplayName}<br>
+                    狀態: ${currentState}<br>
+                    localStorage: ${localStorage.getItem('wakeupmap_username')}`;
+            } catch (error) {
+                result.innerHTML = `❌ 設定失敗: ${error.message}`;
+            }
+        }
+        
+        function testStateSwitch() {
+            const result = document.getElementById('stateResult');
+            
+            try {
+                // 模擬狀態切換邏輯
+                const savedUserName = localStorage.getItem('wakeupmap_username');
+                
+                if (savedUserName) {
+                    rawUserDisplayName = savedUserName;
+                    currentState = 'waiting';
+                    result.innerHTML = `✅ 狀態切換成功<br>
+                        使用者名稱: ${rawUserDisplayName}<br>
+                        新狀態: ${currentState}<br>
+                        邏輯: 有儲存的使用者名稱，進入等待狀態`;
+                } else {
+                    currentState = 'userSetup';
+                    result.innerHTML = `✅ 狀態切換成功<br>
+                        使用者名稱: ${rawUserDisplayName || '未設定'}<br>
+                        新狀態: ${currentState}<br>
+                        邏輯: 沒有儲存的使用者名稱，進入設定狀態`;
+                }
+            } catch (error) {
+                result.innerHTML = `❌ 狀態切換失敗: ${error.message}`;
+            }
+        }
+        
+        function testFullFlow() {
+            const result = document.getElementById('fullFlowResult');
+            
+            try {
+                // 清除現有資料
+                localStorage.removeItem('wakeupmap_username');
+                rawUserDisplayName = null;
+                currentState = 'userSetup';
+                
+                let log = '🔄 開始完整流程測試<br><br>';
+                
+                // 步驟 1: 初始狀態
+                log += '1. 初始狀態檢查<br>';
+                const savedUserName = localStorage.getItem('wakeupmap_username');
+                log += `   - localStorage: ${savedUserName || '空'}<br>`;
+                log += `   - 當前狀態: ${currentState}<br><br>`;
+                
+                // 步驟 2: 設定使用者名稱
+                log += '2. 設定使用者名稱<br>';
+                const testUserName = 'testuser_' + Date.now();
+                localStorage.setItem('wakeupmap_username', testUserName);
+                rawUserDisplayName = testUserName;
+                log += `   - 設定為: ${testUserName}<br>`;
+                log += `   - 驗證: ${localStorage.getItem('wakeupmap_username')}<br><br>`;
+                
+                // 步驟 3: 狀態切換
+                log += '3. 狀態切換<br>';
+                currentState = 'waiting';
+                log += `   - 新狀態: ${currentState}<br>`;
+                log += `   - 使用者名稱: ${rawUserDisplayName}<br><br>`;
+                
+                // 步驟 4: 模擬重新載入
+                log += '4. 模擬重新載入<br>';
+                const reloadedUserName = localStorage.getItem('wakeupmap_username');
+                log += `   - 重新載入後的使用者名稱: ${reloadedUserName}<br>`;
+                log += `   - 狀態應該為: waiting<br><br>`;
+                
+                log += '✅ 完整流程測試完成！';
+                
+                result.innerHTML = log;
+            } catch (error) {
+                result.innerHTML = `❌ 完整流程測試失敗: ${error.message}`;
+            }
+        }
+        
+        // 頁面載入時顯示當前狀態
+        window.addEventListener('load', () => {
+            const savedUserName = localStorage.getItem('wakeupmap_username');
+            console.log('頁面載入，當前狀態:', {
+                savedUserName: savedUserName,
+                rawUserDisplayName: rawUserDisplayName,
+                currentState: currentState
+            });
+        });
+    </script>
+</body>
+</html>
