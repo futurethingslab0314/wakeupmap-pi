@@ -212,9 +212,10 @@ Keywords=wakeup;map;raspberry;pi
 # 設定執行權限
 chmod +x ~/Desktop/WakeUpMap.desktop 
 ```
+### **步驟 6: 完成。快樂的玩！**
 
 
-### **日常維護**
+## **日常維護**
 ```bash
 
 # 更新程式碼
