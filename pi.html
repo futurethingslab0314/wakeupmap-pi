@@ -264,13 +264,13 @@
      crossorigin=""></script>
 
     <!-- 4. 載入本機環境變數腳本（由樹莓派提供/生成） -->
-    <script src="http://localhost:8000/local-env.js"></script>
-    
-    <!-- 5. 載入主要應用程式腳本 -->
     <script>
       window.env = window.env || {};
       window.env.USER_NAME = 'yutingpi';
     </script>
+    
+    <!-- 5. 載入主要應用程式腳本 -->
+    <script src="pi-script.js"></script>
     
     <script>
         // 地圖初始化功能
