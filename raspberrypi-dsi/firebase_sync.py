@@ -30,8 +30,8 @@ class FirebaseSync:
         self.group_name = USER_CONFIG['group_name']
         
         # Firebase 配置 API 端點
-        self.firebase_config_url = "https://subjective-clock.vercel.app/api/config"
-        self.save_record_url = "https://subjective-clock.vercel.app/api/save-record"
+        self.firebase_config_url = "https://wakeupmap-pi.vercel.app/api/config"
+        self.save_record_url = "https://wakeupmap-pi.vercel.app/api/save-record"
         
         self.logger.info(f"Firebase 同步器初始化完成 - 用戶: {self.user_id}, 群組: {self.group_name}")
     

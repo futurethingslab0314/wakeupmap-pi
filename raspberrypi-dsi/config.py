@@ -123,10 +123,10 @@ ANIMATION_CONFIG = {
 
 # API端點
 API_ENDPOINTS = {
-    'find_city': 'https://wake-up-map-mix.vercel.app/api/find-city-geonames',
-    'translate': 'https://wake-up-map-mix.vercel.app/api/translate-location',
-    'generate_story': 'https://wake-up-map-mix.vercel.app/api/generatePiStory',  # 使用 Pi 專用的故事生成 API
-    'save_record': 'https://wake-up-map-mix.vercel.app/api/save-record'
+    'find_city': 'https://wakeupmap-pi.vercel.app/api/find-city-geonames',
+    'translate': 'https://wakeupmap-pi.vercel.app/api/translate-location',
+    'generate_story': 'https://wakeupmap-pi.vercel.app/api/generatePiStory',  # 使用 Pi 專用的故事生成 API
+    'save_record': 'https://wakeupmap-pi.vercel.app/api/save-record'
 }
 
 # 使用者設定
