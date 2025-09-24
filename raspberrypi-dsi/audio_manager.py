@@ -540,7 +540,7 @@ class AudioManager:
             import json
             
             # API 端點 - 使用正確的 Pi 故事生成 API
-            api_url = 'https://subjective-clock.vercel.app/api/generatePiStory'
+            api_url = 'https://wake-up-map-mix.vercel.app/api/generatePiStory'
             
             # 清理城市名稱（移除冒號和空格）
             city = city.strip().rstrip(':').strip() if city else ''
@@ -621,7 +621,7 @@ class AudioManager:
             self.logger.info(f"🔥 [Firebase上傳] 準備上傳數據: {api_data}")
             
             # 調用save-record API
-            api_url = 'https://subjective-clock.vercel.app/api/save-record'
+            api_url = 'https://wake-up-map-mix.vercel.app/api/save-record'
             response = requests.post(
                 api_url,
                 json=api_data,

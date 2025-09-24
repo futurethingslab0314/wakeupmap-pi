@@ -40,7 +40,7 @@ import platform
 logger = logging.getLogger(__name__)
 
 # 配置常數
-WEBSITE_URL = os.getenv('WEBSITE_URL', "https://subjective-clock.vercel.app/pi.html")
+WEBSITE_URL = os.getenv('WEBSITE_URL', "https://wake-up-map-mix.vercel.app/pi.html")
 USER_NAME = os.getenv('USER_NAME', 'unknown')  # 從環境變數設定，預設為 unknown
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
