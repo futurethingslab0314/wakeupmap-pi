@@ -5,6 +5,9 @@
 #### repository說明
 repository意思是儲存空間。
 
+#### 如果我基本環境設置完成。
+不需要進行環境重建，只需要把自己的改完的github 程式碼成功下載至自己的raspberrypi，以及更改 .env, desktop設定即完成。
+
 ## **安裝前準備2：連結你的github至vercel**
 #### vercel說明
 vercel是第三方平台幫我們保護重要的API以及可以公開發布html，讓大家可以瀏覽與連結和互動。我們將我們的github repository(儲存空間)與之相連，讓vercel可以讀取我們的儲存空間，發布我們寫的程式碼，串到API，讓網頁可以互動。
