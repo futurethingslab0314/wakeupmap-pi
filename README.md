@@ -1,8 +1,14 @@
 # 🍓 Raspberry Pi 甦醒地圖程式安裝指南
 ## **安裝前準備1：複製這份repository**
+#### 小挑戰練習：
 請將這份wakeupmap-pi, branch: yutingpi02版本，下載複製成一個新的branch或是開一個新的repository。
+#### repository說明
+repository意思是儲存空間。
 
-## **安裝前準備2：vercel link**
+## **安裝前準備2：連結你的github至vercel**
+#### vercel說明
+vercel是第三方平台幫我們保護重要的API以及可以公開發布html，讓大家可以瀏覽與連結和互動。我們將我們的github repository(儲存空間)與之相連，讓vercel可以讀取我們的儲存空間，發布我們寫的程式碼，串到API，讓網頁可以互動。
+#### 為什麼要自己建立自己的？
 為什麼要有自己的github repository以及自己的vercel project？擁有自己的，我們才能各自修改與上傳至可互動的空間上，每個人都有機會把裝置改成自己想要的版本，例如修改OpenAI說故事的prompt, 介面的調整, 按鈕互動的方式等等。如果共用同一個repository以及vercel link，那麼，我們只能複製出同樣的裝置。
 
 #### 01. 至vercel創建一個'add new project'
@@ -40,7 +46,18 @@ raspberrypi-dsi/config.py
 raspberrypi-dsi/audio_manager_openai_only.py
 raspberrypi-dsi/audio_manager.py
 ```
-#### 08. 存檔，上傳至github，確認vercel有成功deploy。完成！
+
+#### 09. 更改pi.html，使用者名稱：
+至pi.html找到下方程式碼，並將'yutingpi'改成'自己的使用者名稱'(即要使用這台甦醒地圖的使用者名稱)。
+
+```bash
+    <script>
+      window.env = window.env || {};
+      window.env.USER_NAME = 'yutingpi';
+    </script>
+```
+
+#### 10. 存檔，上傳至github，確認vercel有成功deploy。完成！
 
 ## **回到Raspberry Pi畫面，下載程式！**
 
