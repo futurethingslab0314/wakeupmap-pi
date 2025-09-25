@@ -15,6 +15,7 @@ vercel是第三方平台幫我們保護重要的API以及可以公開發布html�
 為什麼要有自己的github repository以及自己的vercel project？擁有自己的，我們才能各自修改與上傳至可互動的空間上，每個人都有機會把裝置改成自己想要的版本，例如修改OpenAI說故事的prompt, 介面的調整, 按鈕互動的方式等等。如果共用同一個repository以及vercel link，那麼，我們只能複製出同樣的裝置。
 
 #### 01. 至vercel創建一個'add new project'
+![vercel add project](./images/vercel add project.png)
 #### 02. 將這個project 連結到github自己的branch或是新的repository。
 #### 03. 在新建的project中，至settings / environment variables，新增key and value。
 請新增以下key（value請查閱wakeupmap-pi 此vercel project中的environment variables），簡單來說，我們是在複製wakeupmap-pi 這個vercel project至一個新的project。
