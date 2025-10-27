@@ -51,7 +51,7 @@ raspberrypi-dsi/audio_manager_openai_only.py
 raspberrypi-dsi/audio_manager.py
 ```
 
-#### 09. 更改pi.html，使用者名稱：
+#### 09. 更改pi.html，使用者名稱[Pi要紀錄的使用者，更改位置1/2！注意]：
 至pi.html找到下方程式碼，並將'yutingpi'改成'自己的使用者名稱'(即要使用這台甦醒地圖的使用者名稱)。
 
 ```bash
@@ -132,7 +132,7 @@ FIREBASE_CLIENT_EMAIL=放入vercel中的your-service-account@your-project.iam.gs
 OPENAI_API_KEY=放入vercel中的sk-your-openai-api-key-here
 ```
 
-#### **步驟 3-2: 在.env裡面，新增下列：
+#### **步驟 3-2: 在.env裡面，新增下列[Pi要紀錄的使用者，更改位置2/2！注意]：
 ```bash
 FIREBASE_PRIVATE_KEY=/home/pi的使用者名稱/wakeupmap-pi/raspberrypi-dsi/private_key.pem
 USER_NAME=yutingpi  #改名稱，例如：yutingpi, alice, bob 等，將會是甦醒地圖的使用者代號。
@@ -426,3 +426,29 @@ git status
 
 ---
 
+
+## 更改裝置使用者名稱：
+
+### 更改位置1/2！注意
+#### 09. github/pi.html，使用者名稱：
+至pi.html找到下方程式碼，並將'yutingpi'改成'自己的使用者名稱'(即要使用這台甦醒地圖的使用者名稱)。
+
+```bash
+    <script>
+      window.env = window.env || {};
+      window.env.USER_NAME = 'yutingpi';
+    </script>
+```
+
+#### 10. 存檔，上傳至github，確認vercel有成功deploy。完成！
+
+
+### 更改位置2/2！注意
+#### **步驟 3-2: 在raspberry pi/.env裡面，新增下列：
+```bash
+FIREBASE_PRIVATE_KEY=/home/pi的使用者名稱/wakeupmap-pi/raspberrypi-dsi/private_key.pem
+USER_NAME=yutingpi  #改名稱，例如：yutingpi, alice, bob 等，將會是甦醒地圖的使用者代號。
+WEBSITE_URL=https://wakeupmap-pi.vercel.app/pi.html #換成自己的vercel deploy link
+
+# 保存並退出 (Ctrl+X, Y, Enter)
+```
