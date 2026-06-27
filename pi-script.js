@@ -2,17 +2,14 @@
 // 簡化版本，專為 800x480 螢幕和固定使用者 "future" 設計
 
 // 全域變數
-let db, auth;
 let currentDataIdentifier = null;
 let rawUserDisplayName = "";
 function getConfiguredUserName() {
     try {
-        const fromConfig = (window && window.firebaseConfig && window.firebaseConfig.userName) ? String(window.firebaseConfig.userName).trim() : '';
         const fromWindowEnv = (window && window.env && window.env.USER_NAME) ? String(window.env.USER_NAME).trim() : '';
-        const name = fromConfig || fromWindowEnv;
-        return name && name.length > 0 ? name : '';
+        return fromWindowEnv && fromWindowEnv.length > 0 ? fromWindowEnv : 'YuPie';
     } catch (e) {
-        return '';
+        return 'YuPie';
     }
 }
 rawUserDisplayName = getConfiguredUserName();
@@ -122,108 +119,13 @@ function ensureInitialState() {
 // 設定基本的全域函數（確保始終可用）
 window.startTheDay = function() {
     console.log('⚠️ 使用基本版本的 startTheDay 函數');
-    console.log('🔍 檢查初始化狀態:', {
-        firebaseSDK: !!window.firebaseSDK,
-        firebaseConfig: !!window.firebaseConfig,
-        currentState: window.currentState || 'unknown'
-    });
-    
-    // 如果 Firebase 還沒準備好，嘗試等待和重試
-    if (!window.firebaseSDK || !window.firebaseConfig) {
-        console.log('🔄 Firebase 未就緒，嘗試等待...');
-        
-        // 顯示載入狀態
-        try {
-            const waitingStateEl = document.getElementById('waitingState');
-            const loadingStateEl = document.getElementById('loadingState');
-            const errorStateEl = document.getElementById('errorState');
-            
-            // 隱藏其他狀態
-            [waitingStateEl, loadingStateEl, errorStateEl].forEach(el => {
-                if (el) el.classList.remove('active');
-            });
-            
-            // 顯示載入狀態
-            if (loadingStateEl) {
-                loadingStateEl.classList.add('active');
-                const loadingText = loadingStateEl.querySelector('.loading-text');
-                if (loadingText) {
-                    loadingText.textContent = '正在初始化系統...';
-                }
-            }
-        } catch (e) {
-            console.error('❌ 狀態切換失敗:', e);
-        }
-        
-        // 設置重試機制
-        let retryCount = 0;
-        const maxRetries = 10;
-        const retryInterval = 1000; // 1秒
-        
-        const retryTimer = setInterval(() => {
-            retryCount++;
-            console.log(`🔄 重試 ${retryCount}/${maxRetries} - 檢查 Firebase 狀態`);
-            
-            if (window.firebaseSDK && window.firebaseConfig) {
-                console.log('✅ Firebase 已就緒，重新觸發甦醒流程');
-                clearInterval(retryTimer);
-                
-                // 檢查是否有完整版本的 startTheDay 函數
-                if (typeof window.startTheDay === 'function' && window.startTheDay.isFullVersion) {
-                    window.startTheDay();
-                } else {
-                    // 手動觸發 firebaseReady 事件
-                    window.dispatchEvent(new CustomEvent('firebaseReady'));
-                    setTimeout(() => {
-                        if (typeof window.startTheDay === 'function') {
-                            window.startTheDay();
-                        }
-                    }, 1000);
-                }
-            } else if (retryCount >= maxRetries) {
-                console.error('❌ Firebase 初始化失敗，已達最大重試次數');
-                clearInterval(retryTimer);
-                
-                // 顯示錯誤狀態
-                try {
-                    const errorStateEl = document.getElementById('errorState');
-                    const errorMessageEl = document.getElementById('errorMessage');
-                    const loadingStateEl = document.getElementById('loadingState');
-                    
-                    if (loadingStateEl) loadingStateEl.classList.remove('active');
-                    if (errorStateEl) errorStateEl.classList.add('active');
-                    if (errorMessageEl) {
-                        errorMessageEl.textContent = 'Firebase 初始化失敗，請重新載入頁面';
-                    }
-                } catch (e) {
-                    console.error('❌ 顯示錯誤狀態失敗:', e);
-                }
-            }
-        }, retryInterval);
-        
-        return false;
-    }
-    
-    // 如果 Firebase 已就緒但沒有完整版本的函數，顯示錯誤
     try {
-        const errorStateEl = document.getElementById('errorState');
-        const errorMessageEl = document.getElementById('errorMessage');
-        if (errorStateEl && errorMessageEl) {
-            // 隱藏其他狀態
-            ['waitingState', 'loadingState', 'resultState'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.remove('active');
-            });
-            // 顯示錯誤狀態
-            errorStateEl.classList.add('active');
-            errorMessageEl.textContent = 'JavaScript 初始化未完成，請稍候';
-            console.log('✅ 顯示錯誤狀態');
-        }
+        ensureInitialState();
     } catch (e) {
-        console.error('❌ 顯示錯誤狀態失敗:', e);
+        console.error('❌ 初始化狀態失敗:', e);
     }
     
-    return false;
+    return true;
 };
 
 // DOM 元素（全域聲明，確保可訪問）
@@ -320,26 +222,22 @@ window.addEventListener('piStoryReady', (event) => {
         console.warn('⚠️ [故事事件] 問候語不存在！');
     }
     
-    // 🔧 Firebase上傳已由後端audio_manager處理，前端僅負責顯示
-    logToBackend('INFO', '📊 [故事顯示] Firebase上傳由後端處理，前端僅更新顯示');
-    console.log('📊 [故事顯示] Firebase上傳由後端處理，前端僅更新顯示');
+    // 故事資料由後端整理後，前端只負責顯示與同步到 Notion
+    logToBackend('INFO', '📊 [故事顯示] 後端已整理故事內容，前端僅更新顯示');
+    console.log('📊 [故事顯示] 後端已整理故事內容，前端僅更新顯示');
     
     // 🔧 前端僅負責故事內容顯示，不再處理Firebase上傳
     const storyData = event.detail;
     
     if (storyData && (storyData.fullContent || storyData.story)) {
-        console.log('🔍 piStoryReady: 檢查 Firebase 狀態 - db:', !!db, 'rawUserDisplayName:', rawUserDisplayName);
-        
-        // 🔧 新邏輯：piStoryReady事件觸發時，後端已確保Firebase上傳完成
-        // 現在應該從Firebase讀取最新資料，而不是使用備援
-        console.log('🔥 piStoryReady事件觸發，後端已確保Firebase上傳完成');
+        console.log('🔍 piStoryReady: 檢查 Notion 同步狀態，使用者:', rawUserDisplayName);
+        console.log('🔥 piStoryReady事件觸發，開始使用 Notion 最新資料');
         console.log('📊 後端傳來的故事數據:', storyData);
         
-        // 檢查 Firebase 是否已初始化
-        if (!db || !window.firebaseSDK) {
-            console.error('❌ piStoryReady: Firebase 未初始化，使用後端傳來的數據');
+        // 使用後端傳來的數據，並在後續同步到 Notion
+        if (!rawUserDisplayName) {
+            console.error('❌ piStoryReady: 使用者名稱未設定，使用後端傳來的數據');
             
-            // 直接使用後端傳來的數據
             const finalDay = storyData.day || 1;
             const resultData = {
                 city: storyData.city || 'Unknown City',
@@ -371,267 +269,39 @@ window.addEventListener('piStoryReady', (event) => {
             }
             return;
         }
-        
-        // 🔧 修復：使用與軌跡相同的表 userHistory 來計算 Day 數
-        const q = query(
-            collection(db, 'userHistory'),
-            where('userDisplayName', '==', rawUserDisplayName)
-            // 移除 orderBy 避免索引需求，只需要數量
-        );
-        getDocs(q).then(querySnapshot => {
-            // 🔧 不在這裡計算 Day，統一在 loadHistoryTrajectory 中處理
-            console.log('📊 piStoryReady: Firebase 查詢到記錄數量:', querySnapshot.size);
-            console.log('📊 piStoryReady: 查詢用戶名:', rawUserDisplayName);
-            console.log('📊 piStoryReady: 查詢結果為空:', querySnapshot.empty);
-            console.log('📊 piStoryReady: Day 計算將在軌跡載入時統一處理');
-            
-            // 🔧 如果沒有找到記錄，檢查資料庫中是否有任何記錄
-            if (querySnapshot.empty) {
-                console.log('⚠️ 沒有找到用戶記錄，嘗試查詢資料庫中的所有記錄...');
-                const allRecordsQuery = query(collection(db, 'wakeup_records'));
-                getDocs(allRecordsQuery).then(allSnapshot => {
-                    console.log('📊 資料庫總記錄數:', allSnapshot.size);
-                    if (!allSnapshot.empty) {
-                        console.log('📊 資料庫中存在的用戶:');
-                        const users = new Set();
-                        allSnapshot.forEach(doc => {
-                            const userId = doc.data().userId;
-                            if (userId) users.add(userId);
-                        });
-                        console.log('👥 用戶列表:', Array.from(users));
-                    }
-                }).catch(err => {
-                    console.error('❌ 查詢所有記錄失敗:', err);
-                });
-            }
-            
-            // 🔥 新邏輯：從Firebase查詢最新記錄的故事內容
-            let latestFirebaseStory = '';
-            let latestRecord = null;
-            
-            if (!querySnapshot.empty) {
-                // 找到最新的記錄
-                const records = [];
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.timestamp) {
-                        records.push(data);
-                    }
-                });
-                
-                // 按時間戳排序，最新的在前
-                records.sort((a, b) => {
-                    const aTime = a.timestamp?.toDate?.() || new Date(a.timestamp || 0);
-                    const bTime = b.timestamp?.toDate?.() || new Date(b.timestamp || 0);
-                    return bTime - aTime;
-                });
-                
-                if (records.length > 0) {
-                    latestRecord = records[0];
-                    latestFirebaseStory = latestRecord.story || latestRecord.greeting || '';
-                    console.log('🔥 從Firebase找到最新故事:', latestFirebaseStory);
-                    console.log('📊 最新記錄時間:', latestRecord.timestamp);
-                }
-            }
-            
-            // 🔧 Day 值將在軌跡載入時統一計算和更新
-            console.log('📊 Day 值將在軌跡載入完成後統一計算');
-            
-            // 優先使用Firebase中的最新故事，其次使用後端傳來的故事
-            const finalStory = latestFirebaseStory || storyData.fullContent || storyData.story || '';
-            console.log('📖 故事優先級: Firebase故事:', !!latestFirebaseStory, '後端故事:', !!(storyData.fullContent || storyData.story), '最終使用:', finalStory.substring(0, 50) + '...');
-            
-            // 🔧 嘗試從 window.currentCityData 獲取座標（如果後端沒有提供）
-            let finalLatitude = storyData.latitude || '';
-            let finalLongitude = storyData.longitude || '';
-            
-            if ((!finalLatitude || !finalLongitude) && window.currentCityData) {
-                console.log('📊 piStoryReady: 後端沒有座標，嘗試使用 currentCityData:', window.currentCityData);
-                finalLatitude = window.currentCityData.latitude || finalLatitude;
-                finalLongitude = window.currentCityData.longitude || finalLongitude;
-            }
-            
-            const resultData = {
-                city: storyData.city || '',
-                country: storyData.country || '',
-                countryCode: storyData.countryCode || '',
-                latitude: finalLatitude,
-                longitude: finalLongitude,
-                greeting: storyData.greeting || '',
-                language: storyData.language || '',
-                story: finalStory,
-                day: 1, // 🔧 暫時設為1，將在軌跡載入後更新為正確值
-                flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
-            };
-            
-            console.log('📊 piStoryReady: 最終座標數據:', { 
-                latitude: finalLatitude, 
-                longitude: finalLongitude,
-                source: finalLatitude !== storyData.latitude ? 'currentCityData' : 'storyData'
-            });
-            
-            // 🔧 標記語音故事即將顯示，避免 updateResultData 生成新故事
-            window.voiceStoryDisplayed = true;
-            window.voiceStoryContent = finalStory;
-            console.log('✅ [正常分支] 標記語音故事即將顯示，避免重複生成');
-            
-            updateResultData(resultData);
+        const finalStory = storyData.fullContent || storyData.story || '';
+        const resultData = {
+            city: storyData.city || '',
+            country: storyData.country || '',
+            countryCode: storyData.countryCode || '',
+            latitude: storyData.latitude || 0,
+            longitude: storyData.longitude || 0,
+            greeting: storyData.greeting || '',
+            language: storyData.language || '',
+            story: finalStory,
+            day: storyData.day || 1,
+            flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
+        };
 
-            // 🔧 修復：現在切換到結果狀態，因為故事已準備完成
-            setState('result');
-            console.log('✅ 故事已準備完成，切換到結果頁面');
+        window.voiceStoryDisplayed = true;
+        window.voiceStoryContent = finalStory;
+        updateResultData(resultData);
+        setState('result');
 
-            // 🔧 縮短延遲，立即開始統一的地圖初始化
+        setTimeout(() => {
+            loadHistoryTrajectory();
+        }, 50);
+
+        const storyElement = document.getElementById('storyText');
+        if (storyElement && finalStory) {
+            storyElement.textContent = '剛起床，正在清喉嚨，準備為你朗誦你的甦醒日誌.....';
             setTimeout(() => {
-                console.log('🔄 開始統一的地圖和軌跡初始化...');
-                console.log('🔍 準備調用 loadHistoryTrajectory');
-                console.log('🔍 當前 Firebase 狀態:', {
-                    db: !!window.db,
-                    auth: !!window.auth,
-                    collection: !!window.collection,
-                    query: !!window.query,
-                    where: !!window.where,
-                    getDocs: !!window.getDocs,
-                    firebaseSDK: !!window.firebaseSDK,
-                    getFirestore: !!window.firebaseSDK?.getFirestore
-                });
-                
-                // 🔧 在調用之前確保Firebase已初始化
-                if (!window.db && window.firebaseSDK && window.firebaseSDK.getFirestore) {
-                    console.log('🔧 在軌跡載入前進行Firebase初始化...');
-                    window.db = window.firebaseSDK.getFirestore();
-                    window.auth = window.firebaseSDK.getAuth ? window.firebaseSDK.getAuth() : window.auth;
-                    console.log('✅ Firebase提前初始化完成，db狀態:', !!window.db);
-                }
-                
-                loadHistoryTrajectory();
-            }, 50);
-
-            // 顯示故事文字
-            const storyElement = document.getElementById('storyText');
-            if (storyElement && finalStory) {
-                storyElement.textContent = '剛起床，正在清喉嚨，準備為你朗誦你的甦醒日誌.....';
-                setTimeout(() => {
-                    console.log('🔥 顯示最終故事內容:', finalStory);
-                    window.voiceStoryDisplayed = true; // 標記語音故事已顯示
-                    window.voiceStoryContent = finalStory; // 保存語音故事內容
-                    startStoryTypewriter(finalStory);
-                }, 1000);
-            } else {
-                console.error('❌ 找不到 #storyText 元素或故事內容為空');
-            }
-
-            // 🔧 恢復：更新Firebase記錄添加故事內容
-            if (storyData.story || storyData.greeting) {
-                console.log('📖 [Firebase更新] 準備更新Firebase記錄中的故事內容...');
-                
-                if (window.currentRecordId) {
-                    // 有記錄ID，更新現有記錄
-                    console.log('📖 [Firebase更新] 使用記錄ID更新故事內容...');
-                    updateFirebaseWithStory({
-                        story: storyData.story || storyData.fullContent || '',
-                        greeting: storyData.greeting || '',
-                        language: storyData.language || '',
-                        languageCode: storyData.languageCode || ''
-                    }).then(success => {
-                        if (success) {
-                            console.log('✅ [Firebase更新] 故事資料更新成功');
-                        } else {
-                            console.warn('⚠️ [Firebase更新] 故事資料更新失敗');
-                        }
-                    });
-                } else {
-                    console.warn('⚠️ [Firebase更新] 沒有找到記錄ID，跳過更新');
-                }
-            }
-
-            // 故事顯示已在上面處理，無需重複
-        }).catch(error => {
-            console.error('❌ piStoryReady: 查詢 Day 失敗:', error);
-            // 如果查詢失敗，優先使用樹莓派的 Day 值
-            const finalDay = storyData.day || 1; // 優先使用樹莓派的 Day 值，否則預設為 1
-            console.log('📊 查詢失敗，Day 值決定: 樹莓派傳來:', storyData.day, '最終使用:', finalDay);
-            
-            // 🔧 標記語音故事已顯示，避免 updateResultData 重複生成故事
-            window.voiceStoryDisplayed = true;
-            window.voiceStoryContent = storyData.fullContent || storyData.story;
-            console.log('✅ [錯誤分支] 標記語音故事已顯示，避免重複生成');
-            
-            const resultData = {
-                city: storyData.city || '',
-                country: storyData.country || '',
-                countryCode: storyData.countryCode || '',
-                latitude: storyData.latitude || '',
-                longitude: storyData.longitude || '',
-                greeting: storyData.greeting || '',
-                language: storyData.language || '',
-                story: storyData.story || '',
-                day: finalDay, // 優先使用樹莓派的 Day 值
-                flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
-            };
-            updateResultData(resultData);
-
-            // 🔧 恢復：錯誤情況下也嘗試更新Firebase記錄
-            if (storyData.story || storyData.greeting) {
-                console.log('📖 [Firebase更新-錯誤恢復] 嘗試更新Firebase記錄...');
-                
-                if (window.currentRecordId) {
-                    console.log('📖 [Firebase更新-錯誤恢復] 使用記錄ID更新故事內容...');
-                    updateFirebaseWithStory({
-                        story: storyData.story || storyData.fullContent || '',
-                        greeting: storyData.greeting || '',
-                        language: storyData.language || '',
-                        languageCode: storyData.languageCode || ''
-                    }).then(success => {
-                        if (success) {
-                            console.log('✅ [Firebase更新-錯誤恢復] 故事資料更新成功');
-                        } else {
-                            console.warn('⚠️ [Firebase更新-錯誤恢復] 故事資料更新失敗');
-                        }
-                    });
-                } else {
-                    console.warn('⚠️ [Firebase更新-錯誤恢復] 沒有找到記錄ID，跳過更新');
-                }
-            }
-
-            // 開始打字機效果顯示故事
-            const storyTextEl = document.getElementById('storyText');
-            if (storyTextEl) {
-                storyTextEl.textContent = '剛起床，正在清喉嚨，準備為你朗誦你的甦醒日誌.....';
-                setTimeout(() => {
-                    startStoryTypewriter(storyData.fullContent || storyData.story);
-                }, 1000);
-            }
-        });
+                console.log('🔥 顯示最終故事內容:', finalStory);
+                startStoryTypewriter(finalStory);
+            }, 1000);
+        }
     }
 });
-
-// 當 Firebase 準備就緒時執行
-window.addEventListener('firebaseReady', async (event) => {
-    console.log('🔥 Firebase Ready 事件觸發');
-    console.log('🔍 Firebase 狀態檢查:', {
-        firebaseSDK: !!window.firebaseSDK,
-        firebaseConfig: !!window.firebaseConfig,
-        currentTime: new Date().toISOString()
-    });
-    
-    const {
-        initializeApp,
-        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-    } = window.firebaseSDK;
-
-                // 設定全域 Firebase 函數，供其他函數使用
-            window.collection = collection;
-            window.query = query;
-            window.where = where;
-            window.orderBy = orderBy;
-            window.getDocs = getDocs;
-            window.addDoc = addDoc;
-            window.serverTimestamp = serverTimestamp;
-            window.updateDoc = updateDoc;
-            window.doc = doc;
 
     // 取得 DOM 元素
     console.log('🔍 正在取得 DOM 元素...');
@@ -693,20 +363,6 @@ window.addEventListener('firebaseReady', async (event) => {
         console.error('❌ DOM 元素取得失敗:', error);
     }
 
-    // 設定 Firebase
-    try {
-        console.log('🔥 正在初始化 Firebase...');
-        db = getFirestore();
-        auth = getAuth();
-        
-        // 更新連線狀態
-        updateConnectionStatus(true);
-        console.log('✅ Firebase 初始化成功');
-    } catch (error) {
-        console.error('❌ Firebase 初始化失敗:', error);
-        updateConnectionStatus(false);
-    }
-
     // 基於時間分鐘數計算目標緯度
     function calculateTargetLatitudeFromTime() {
         const now = new Date();
@@ -742,7 +398,7 @@ window.addEventListener('firebaseReady', async (event) => {
     }
 
     // 更新連線狀態
-    function updateConnectionStatus(connected) {
+function updateConnectionStatus(connected) {
         console.log('🔗 更新連線狀態:', connected ? '已連線' : '離線');
         if (connectionStatus) {
             connectionStatus.className = connected ? 'status-dot' : 'status-dot offline';
@@ -1063,7 +719,7 @@ window.addEventListener('firebaseReady', async (event) => {
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            // 以 /api/config 注入的 USER_NAME 為主
+            // 以 window.env.USER_NAME 為主，沒有就固定使用 YuPie
             rawUserDisplayName = getConfiguredUserName();
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
@@ -2538,35 +2194,17 @@ function updateResultData(data) {
         globalDateInput.value = new Date().toISOString().split('T')[0];
     }
 
-    // Firebase 認證
-    try {
-        console.log('🔐 開始 Firebase 認證...');
-        await signInAnonymously(auth);
-        console.log('✅ Firebase 匿名登入成功');
-        updateConnectionStatus(true);
-        
-        // 設定初始狀態 - 但不覆蓋正在進行的狀態
-        if (currentState === 'waiting' || !currentState) {
-            console.log('🔧 設定初始等待狀態');
-            setState('waiting');
-        } else {
-            console.log('🔧 保持當前狀態:', currentState, '不覆蓋為waiting');
-        }
-        
-        // 自動載入使用者資料
-        console.log('🤖 自動載入使用者資料...');
-        await loadUserData();
-        
-        // 設定全域函數供實體按鈕調用
-        window.startTheDay = startTheDay;
-        window.setState = setState;
-        console.log('✅ 全域函數已設定');
-        
-    } catch (error) {
-        console.error('❌ Firebase 認證失敗:', error);
-        updateConnectionStatus(false);
-        setState('error', 'Firebase 初始化失敗');
+    // 不再需要 Firebase 認證，直接初始化使用者與狀態
+    updateConnectionStatus(true);
+    if (currentState === 'waiting' || !currentState) {
+        console.log('🔧 設定初始等待狀態');
+        setState('waiting');
     }
+    console.log('🤖 自動載入使用者資料...');
+    loadUserData();
+    window.startTheDay = startTheDay;
+    window.setState = setState;
+    console.log('✅ 全域函數已設定');
 
     console.log('🎉 Raspberry Pi 甦醒地圖初始化完成');
     
@@ -2583,7 +2221,6 @@ function updateResultData(data) {
             console.error('❌ 初始化後仍找不到故事文字元素');
         }
     }, 1000);
-});
 
 // 錯誤處理
 window.addEventListener('error', (event) => {
@@ -2592,14 +2229,12 @@ window.addEventListener('error', (event) => {
 
 // 載入狀態指示
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOM 載入完成，等待 Firebase...');
+    console.log('📄 DOM 載入完成，等待初始化...');
     
     // 🔧 首先確保初始狀態正確
     ensureInitialState();
     
     console.log('🔍 初始狀態檢查:', {
-        firebaseConfig: !!window.firebaseConfig,
-        firebaseSDK: !!window.firebaseSDK,
         startTheDayFunction: typeof window.startTheDay,
         currentState: window.currentState
     });
@@ -2626,12 +2261,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('🧪 測試：findCityButton 未找到');
         }
         
-        // 檢查 Firebase 載入狀態
-        console.log('🧪 Firebase 載入狀態檢查:', {
-            firebaseConfig: !!window.firebaseConfig,
-            firebaseSDK: !!window.firebaseSDK,
-            configScript: document.querySelector('script[src="/api/config"]') ? '已載入' : '未載入'
-        });
+        console.log('🧪 Notion 相關狀態檢查完成');
     }, 1000);
 }); 
 
@@ -2765,6 +2395,37 @@ function initMainInteractiveMap(lat, lon, city, country) {
     
     // 立即載入並繪製軌跡線
     loadAndDrawTrajectory();
+}
+
+async function fetchNotionRecords(params = {}) {
+    const query = new URLSearchParams();
+    if (params.userName) query.set('userName', params.userName);
+    if (params.date) query.set('date', params.date);
+    if (params.limit) query.set('limit', String(params.limit));
+    const response = await fetch(`/api/notion-records?${query.toString()}`);
+    if (!response.ok) {
+        throw new Error(`Notion query failed: ${response.status}`);
+    }
+    return response.json();
+}
+
+function normalizeNotionRecord(record) {
+    return {
+        pageId: record.pageId || '',
+        userName: record.userName || '',
+        city: record.city || '',
+        country: record.country || '',
+        city_zh: record.city_zh || '',
+        country_zh: record.country_zh || '',
+        greeting: record.greeting || '',
+        story: record.story || '',
+        story_zh: record.story_zh || '',
+        recordedAtDate: record.recordedAtDate || '',
+        recordedAt: record.recordedAt || '',
+        localTime: record.localTime || '',
+        longtitude: typeof record.longtitude === 'number' ? record.longtitude : parseFloat(record.longtitude || 0) || 0,
+        latitude: typeof record.latitude === 'number' ? record.latitude : parseFloat(record.latitude || 0) || 0
+    };
 }
 
 // 載入並繪製軌跡線
@@ -2972,115 +2633,40 @@ window.checkTrajectory = function() {
     // 載入歷史軌跡
     async function loadHistoryTrajectory() {
         console.log('🔄 loadHistoryTrajectory 函數被調用');
-        console.log('🔍 Firebase db 狀態:', !!db);
-        console.log('🔍 Firebase auth 狀態:', !!auth);
-        
-        // 🔧 自動修復Firebase初始化問題
-        if (!db && window.firebaseSDK && window.firebaseSDK.getFirestore) {
-            console.log('🔧 自動修復：初始化Firebase db實例...');
-            window.db = window.firebaseSDK.getFirestore();
-            db = window.db; // 更新本地變數
-            console.log('✅ Firebase db實例已自動初始化');
-        }
-        
-        if (!auth && window.firebaseSDK && window.firebaseSDK.getAuth) {
-            console.log('🔧 自動修復：初始化Firebase auth實例...');
-            window.auth = window.firebaseSDK.getAuth();
-            auth = window.auth; // 更新本地變數
-            console.log('✅ Firebase auth實例已自動初始化');
-        }
-        
-        if (!db) {
-            console.log('❌ 載入歷史軌跡：Firebase 數據庫仍然未初始化');
-            console.log('🔍 可用的firebaseSDK方法:', Object.keys(window.firebaseSDK || {}));
+        const effectiveUser = getConfiguredUserName();
+        if (!effectiveUser) {
+            console.warn('⏸️ 使用者名稱尚未取得，跳過歷史軌跡查詢');
             return;
-        }
-        
-        // 🔧 修復：樹莓派環境下不需要用戶認證也能讀取軌跡
-        if (!auth.currentUser) {
-            console.log('📍 用戶未認證，嘗試匿名讀取軌跡...');
         }
 
         try {
-            console.log('📍 開始載入歷史軌跡...');
-            
-            // 查詢 userHistory 中的歷史記錄（暫時簡化查詢避免索引需求）
-            const historyQuery = query(
-                collection(db, 'userHistory'),
-                where('userDisplayName', '==', rawUserDisplayName)
-                // 暫時移除 orderBy 避免索引需求，改為在客戶端排序
-            );
+            console.log('📍 開始載入歷史軌跡，使用者:', effectiveUser);
+            const payload = await fetchNotionRecords({ userName: effectiveUser, limit: 100 });
+            const records = (payload.records || []).map(normalizeNotionRecord);
+            const historyPoints = records
+                .filter(record => Number.isFinite(record.latitude) && Number.isFinite(record.longtitude))
+                .map(record => ({
+                    lat: record.latitude,
+                    lng: record.longtitude,
+                    city: record.city,
+                    country: record.country,
+                    timestamp: new Date(record.recordedAt || Date.now()).getTime(),
+                    date: record.recordedAtDate || '',
+                    recordedAt: record.recordedAt || ''
+                }))
+                .sort((a, b) => a.timestamp - b.timestamp);
 
-            console.log('🔍 執行Firebase查詢...');
-            const querySnapshot = await getDocs(historyQuery);
-            console.log(`🔍 查詢結果: ${querySnapshot.size} 筆記錄`);
-            const historyPoints = [];
+            console.log(`📍 載入了 ${historyPoints.length} 個歷史點位`);
+            const dayNumberEl = document.getElementById('dayNumber');
+            if (dayNumberEl) {
+                dayNumberEl.textContent = historyPoints.length + 1;
+            }
 
-            querySnapshot.forEach((doc) => {
-                const record = doc.data();
-                console.log('🔍 處理記錄:', record);
-                
-                if (typeof record.latitude === 'number' && isFinite(record.latitude) &&
-                    typeof record.longitude === 'number' && isFinite(record.longitude)) {
-                    
-                    const timestamp = record.recordedAt?.toMillis?.() || Date.now();
-                    const city = record.city || '未知城市';
-                    const country = record.country || '未知國家';
-                    
-                    const point = {
-                        lat: record.latitude,
-                        lng: record.longitude,
-                        city: city,
-                        country: country,
-                        timestamp: timestamp,
-                        date: new Date(timestamp).toLocaleDateString('zh-TW'),
-                        recordedAt: record.recordedAt // 保留原始時間戳用於排序
-                    };
-                    
-                    historyPoints.push(point);
-                    console.log(`✅ 添加有效點位 ${historyPoints.length}:`, point);
-                } else {
-                    console.log('⚠️ 跳過無效座標記錄:', record);
-                }
-            });
-
-            // 在客戶端按時間排序（避免 Firebase 索引需求）
-            historyPoints.sort((a, b) => {
-                const timeA = a.recordedAt && a.recordedAt.toMillis ? a.recordedAt.toMillis() : a.timestamp;
-                const timeB = b.recordedAt && b.recordedAt.toMillis ? b.recordedAt.toMillis() : b.timestamp;
-                return timeA - timeB; // 升序排列
-            });
-
-                    console.log(`📍 載入了 ${historyPoints.length} 個歷史點位`);
-        
-        // 🔧 統一計算和更新 Day 值
-        const correctDay = historyPoints.length + 1; // 歷史記錄 + 今天 = 正確的 Day
-        console.log(`📊 正確的 Day 計算: ${historyPoints.length} 個歷史記錄 + 1 = Day ${correctDay}`);
-        
-        // 更新 Day 顯示
-        const dayNumberEl = document.getElementById('dayNumber');
-        if (dayNumberEl) {
-            dayNumberEl.textContent = correctDay;
-            console.log(`📊 Day 數字已更新為: ${correctDay}`);
-        }
-        
-        // 🔧 統一處理：先初始化基礎地圖，再添加所有標記
-        initBaseMapIfNeeded();
-        
-        console.log(`🔍 準備顯示軌跡: ${historyPoints.length} 個點，地圖存在: ${!!mainInteractiveMap}`);
-        
-        if (historyPoints.length > 0 && mainInteractiveMap) {
-            displayHistoryTrajectory(historyPoints);
-        } else {
-            console.log('❌ 軌跡顯示條件不滿足:', {
-                pointsCount: historyPoints.length,
-                mapExists: !!mainInteractiveMap
-            });
-        }
-        
-        // 🔧 添加今日標記（如果有座標的話）
-        addTodayMarkerIfNeeded();
-
+            initBaseMapIfNeeded();
+            if (historyPoints.length > 0 && mainInteractiveMap) {
+                displayHistoryTrajectory(historyPoints);
+            }
+            addTodayMarkerIfNeeded();
         } catch (error) {
             console.error('📍 載入歷史軌跡失敗:', error);
         }
@@ -3391,235 +2977,54 @@ window.checkTrajectory = function() {
 
 // 移除遺留的不完整程式碼，這些功能已經在其他地方實現
 
-    // 新增：從Firebase直接讀取並顯示故事文字
-    async function loadAndDisplayStoryFromFirebase() {
+    // 新增：從 Notion 直接讀取並顯示故事文字
+    async function loadAndDisplayStoryFromNotion() {
         try {
-            // 🔧 修復：放寬認證檢查，只要Firebase已初始化就嘗試讀取
-            if (!db) {
-                console.log('⚠️ Firebase數據庫未初始化，無法讀取故事');
-                return;
-            }
+            const userName = getConfiguredUserName();
+            const payload = await fetchNotionRecords({ userName, limit: 1 });
+            const latestRecord = normalizeNotionRecord(payload.latest || {});
+            const storyText = latestRecord.story || latestRecord.greeting || '';
 
-            // 如果沒有認證，嘗試匿名登入
-            if (!auth.currentUser) {
-                console.log('🔑 用戶未認證，嘗試匿名登入...');
-                try {
-                    await signInAnonymously(auth);
-                    console.log('✅ 匿名登入成功');
-                } catch (authError) {
-                    console.error('❌ 匿名登入失敗:', authError);
-                    return;
-                }
-            }
-
-            console.log('📖 從Firebase讀取最新故事內容...');
-            
-            // 查詢所有記錄（避免索引問題）
-            const { collection, query, where, getDocs } = window.firebaseSDK;
-            const q = query(
-                collection(db, 'wakeup_records'),
-                where('userId', '==', rawUserDisplayName)
-            );
-
-            const querySnapshot = await getDocs(q);
-            
-            if (!querySnapshot.empty) {
-                // 客戶端排序獲取最新記錄
-                const records = [];
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.timestamp) {
-                        records.push(data);
-                    }
-                });
-                
-                // 按timestamp排序，最新的在前
-                records.sort((a, b) => {
-                    const aTime = a.timestamp?.toDate?.() || new Date(a.timestamp || 0);
-                    const bTime = b.timestamp?.toDate?.() || new Date(b.timestamp || 0);
-                    return bTime - aTime;
-                });
-                
-                if (records.length > 0) {
-                    const latestRecord = records[0];
-                    const storyText = latestRecord.story || latestRecord.greeting || '';
-                    
-                                         console.log('📖 從Firebase讀取到最新故事:', storyText);
-                     console.log('📊 總記錄數:', records.length, '最新記錄時間:', latestRecord.timestamp);
-                 
-                     if (storyText) {
-                         const storyTextEl = document.getElementById('storyText');
-                         if (storyTextEl) {
-                             storyTextEl.textContent = '剛起床，正在清喉嚨，準備為你朗誦你的甦醒日誌.....';
-                             setTimeout(() => {
-                                 console.log('🔧 開始顯示Firebase中的故事:', storyText);
-                                 startStoryTypewriter(storyText);
-                             }, 1000);
-                         } else {
-                             console.error('❌ 找不到 #storyText 元素');
-                         }
-                     } else {
-                         console.warn('⚠️ Firebase記錄中沒有故事內容');
-                     }
-                 } else {
-                     console.warn('⚠️ Firebase記錄中沒有有效的時間戳');
-                 }
-            } else {
-                console.warn('⚠️ Firebase中沒有找到任何記錄');
-            }
-
-        } catch (error) {
-            console.error('❌ 從Firebase讀取故事失敗:', error);
-        }
-    }
-
-    // 將函數暴露給全域範圍
-    window.loadAndDisplayStoryFromFirebase = loadAndDisplayStoryFromFirebase;
-
-    // 強制顯示故事（用於處理載入用戶資料失敗的情況）
-    async function forceDisplayStoryFromFirebase() {
-        try {
-            // 🔧 檢查是否已有語音故事，避免覆蓋
-            if (window.voiceStoryDisplayed && window.voiceStoryContent) {
-                console.log('✅ 已有語音故事，跳過強制Firebase讀取:', window.voiceStoryContent.substring(0, 50) + '...');
-                return true; // 返回成功，避免觸發備援邏輯
-            }
-            
-            console.log('🔧 強制從Firebase讀取故事（忽略認證狀態）...');
-            
-            // 即使沒有認證也嘗試讀取（匿名訪問）
-            if (!db) {
-                console.error('❌ Firebase數據庫未初始化');
+            if (!storyText) {
+                console.warn('⚠️ Notion 記錄中沒有故事內容');
                 return false;
             }
 
-            // 如未設定則以 .env 的 USER_NAME 為主，否則回退到 future
-            if (!rawUserDisplayName) {
-                rawUserDisplayName = getConfiguredUserName();
-                console.log('🔧 強制設置用戶名稱為:', rawUserDisplayName);
+            const storyTextEl = document.getElementById('storyText');
+            if (storyTextEl) {
+                storyTextEl.textContent = '剛起床，正在清喉嚨，準備為你朗誦你的甦醒日誌.....';
+                setTimeout(() => startStoryTypewriter(storyText), 1000);
+                return true;
             }
-
-            // 查詢所有記錄（避免認證問題）
-            const { collection, query, where, getDocs } = window.firebaseSDK;
-            const q = query(
-                collection(db, 'wakeup_records'),
-                where('userId', '==', rawUserDisplayName)
-            );
-
-            console.log('📡 執行Firebase查詢，用戶:', rawUserDisplayName);
-            const querySnapshot = await getDocs(q);
-            
-            console.log('🔍 查詢結果 - 是否為空:', querySnapshot.empty);
-            console.log('🔍 查詢結果 - 文檔數量:', querySnapshot.size);
-            
-            // 調試：檢查所有記錄（不限用戶）
-            try {
-                const allRecordsQuery = query(collection(db, 'wakeup_records'));
-                const allSnapshot = await getDocs(allRecordsQuery);
-                console.log('🔍 資料庫總記錄數:', allSnapshot.size);
-                
-                if (allSnapshot.size > 0) {
-                    console.log('🔍 資料庫中的用戶列表:');
-                    const userIds = new Set();
-                    allSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.userId) {
-                            userIds.add(data.userId);
-                        }
-                    });
-                    console.log('🔍 找到的用戶ID:', Array.from(userIds));
-                }
-            } catch (debugError) {
-                console.log('🔍 調試查詢失敗:', debugError);
-            }
-            
-            if (!querySnapshot.empty) {
-                // 客戶端排序獲取最新記錄
-                const records = [];
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.timestamp) {
-                        records.push(data);
-                    }
-                });
-                
-                console.log(`📊 找到 ${records.length} 筆記錄`);
-                
-                if (records.length > 0) {
-                    // 按timestamp排序，最新的在前
-                    records.sort((a, b) => {
-                        const aTime = a.timestamp?.toDate?.() || new Date(a.timestamp || 0);
-                        const bTime = b.timestamp?.toDate?.() || new Date(b.timestamp || 0);
-                        return bTime - aTime;
-                    });
-                    
-                    const latestRecord = records[0];
-                    const storyText = latestRecord.story || latestRecord.greeting || '';
-                    
-                    console.log('📖 最新故事內容:', storyText);
-                    
-                    if (storyText) {
-                        const storyTextEl = document.getElementById('storyText');
-                        if (storyTextEl) {
-                            storyTextEl.textContent = '正在為你朗誦你的甦醒日誌.....';
-                            setTimeout(() => {
-                                console.log('🎬 強制顯示故事:', storyText);
-                                startStoryTypewriter(storyText);
-                            }, 800);
-                            return true;
-                        } else {
-                            console.error('❌ 找不到 #storyText 元素');
-                        }
-                    } else {
-                        console.warn('⚠️ 記錄中沒有故事內容');
-                    }
-                } else {
-                    console.warn('⚠️ 沒有有效的時間戳記錄');
-                }
-            } else {
-                console.warn('⚠️ Firebase中沒有找到任何記錄，使用備援故事');
-                
-                // 備援方案：如果沒有記錄，創建一個簡單的歡迎故事
-                const storyTextEl = document.getElementById('storyText');
-                if (storyTextEl) {
-                    const backupStory = `Good Morning! 歡迎使用甦醒地圖！這是你的第一次體驗，今天將是一個全新的開始。讓我們一起探索這個世界的美好角落吧！`;
-                    
-                    storyTextEl.textContent = '正在為你朗誦歡迎故事.....';
-                    setTimeout(() => {
-                        console.log('🎬 顯示備援故事:', backupStory);
-                        startStoryTypewriter(backupStory);
-                    }, 800);
-                    return true;
-                } else {
-                    console.error('❌ 找不到 #storyText 元素');
-                }
-            }
-
+            return false;
         } catch (error) {
-            console.error('❌ 強制顯示故事失敗:', error);
-            
-            // 最終備援：即使出錯也要顯示一個故事
-            try {
-                const storyTextEl = document.getElementById('storyText');
-                if (storyTextEl) {
-                    const emergencyStory = `Good Morning! 甦醒地圖系統正在為您準備中，請耐心等候。今天會是美好的一天！`;
-                    
-                    storyTextEl.textContent = '系統準備中，請稍候.....';
-                    setTimeout(() => {
-                        console.log('🚨 顯示緊急備援故事:', emergencyStory);
-                        startStoryTypewriter(emergencyStory);
-                    }, 800);
-                    return true;
-                }
-            } catch (finalError) {
-                console.error('❌ 最終備援也失敗:', finalError);
-            }
+            console.error('❌ 從 Notion 讀取故事失敗:', error);
+            return false;
+        }
+    }
+
+    window.loadAndDisplayStoryFromNotion = loadAndDisplayStoryFromNotion;
+    window.loadAndDisplayStoryFromFirebase = loadAndDisplayStoryFromNotion;
+
+    async function forceDisplayStoryFromNotion() {
+        if (window.voiceStoryDisplayed && window.voiceStoryContent) {
+            return true;
+        }
+        const success = await loadAndDisplayStoryFromNotion();
+        if (success) return true;
+
+        const storyTextEl = document.getElementById('storyText');
+        if (storyTextEl) {
+            const backupStory = `Good Morning! 歡迎使用甦醒地圖！這是你的第一次體驗，今天將是一個全新的開始。讓我們一起探索這個世界的美好角落吧！`;
+            storyTextEl.textContent = '正在為你朗誦歡迎故事.....';
+            setTimeout(() => startStoryTypewriter(backupStory), 800);
+            return true;
         }
         return false;
     }
 
-    // 將強制顯示函數暴露給全域範圍
-    window.forceDisplayStoryFromFirebase = forceDisplayStoryFromFirebase;
+    window.forceDisplayStoryFromNotion = forceDisplayStoryFromNotion;
+    window.forceDisplayStoryFromFirebase = forceDisplayStoryFromNotion;
 
     // 監控用戶資料載入失敗，自動嘗試強制顯示故事
     let userDataLoadAttempts = 0;
@@ -3657,214 +3062,42 @@ window.checkTrajectory = function() {
     // 啟動用戶資料載入監控
     setTimeout(monitorUserDataLoad, 10000); // 10秒後開始監控
 
-    // ✨ 新增：簡化的故事顯示邏輯 - 直接從Firebase抓取future用戶的最新故事
-    async function displayLatestStoryFromFirebase() {
-        try {
-            console.log('📖 [簡化邏輯] 直接從Firebase獲取future用戶的最新故事...');
-            
-            if (!db) {
-                console.log('⚠️ Firebase數據庫未初始化');
-                return false;
-            }
-
-            // 確保有認證
-            if (!auth.currentUser) {
-                try {
-                    await signInAnonymously(auth);
-                    console.log('✅ 匿名登入成功');
-                } catch (authError) {
-                    console.error('❌ 匿名登入失敗:', authError);
-                    return false;
-                }
-            }
-
-            // 查詢future用戶的最後一筆記錄（依照時間戳排序）
-            if (!window.firebaseSDK) {
-                console.error('❌ window.firebaseSDK 未初始化');
-                return false;
-            }
-            
-            const { collection, query, where, orderBy, limit, getDocs } = window.firebaseSDK;
-            
-            // 先嘗試無索引查詢作為備援
-            let q;
-            try {
-                q = query(
-                    collection(db, 'wakeup_records'),
-                    where('userId', '==', getConfiguredUserName()),
-                    orderBy('timestamp', 'desc'),  // 按時間戳降序排列
-                    limit(1)  // 只取最新的一筆
-                );
-            } catch (indexError) {
-                console.log('⚠️ 索引查詢失敗，使用簡單查詢:', indexError);
-                q = query(
-                    collection(db, 'wakeup_records'),
-                    where('userId', '==', getConfiguredUserName())
-                );
-            }
-
-            const querySnapshot = await getDocs(q);
-            
-            if (!querySnapshot.empty) {
-                let latestRecord;
-                
-                // 如果是簡單查詢（無orderBy），需要客戶端排序
-                if (q._query.orderBy.length === 0) {
-                    console.log('🔄 [簡化邏輯] 執行客戶端排序');
-                    const records = [];
-                    querySnapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.timestamp) {
-                            records.push(data);
-                        }
-                    });
-                    
-                    // 客戶端排序
-                    records.sort((a, b) => {
-                        const aTime = a.timestamp?.toDate?.() || new Date(a.timestamp || 0);
-                        const bTime = b.timestamp?.toDate?.() || new Date(b.timestamp || 0);
-                        return bTime - aTime;  // 降序
-                    });
-                    
-                    latestRecord = records[0];
-                } else {
-                    // 如果有orderBy，直接取第一個
-                    latestRecord = querySnapshot.docs[0].data();
-                }
-                
-                const storyText = latestRecord.story || latestRecord.greeting || '';
-                
-                console.log('📖 [簡化邏輯] 找到最新故事:', storyText);
-                
-                if (storyText) {
-                    const storyTextEl = document.getElementById('storyText');
-                    if (storyTextEl) {
-                        storyTextEl.textContent = '正在為你朗誦你的甦醒日誌.....';
-                        setTimeout(() => {
-                            console.log('🎬 [簡化邏輯] 開始顯示最新故事');
-                            startStoryTypewriter(storyText);
-                        }, 1000);
-                        return true;
-                    } else {
-                        console.error('❌ 找不到 #storyText 元素');
-                    }
-                } else {
-                    console.log('⚠️ 最新記錄中沒有故事內容');
-                }
-            } else {
-                console.log('⚠️ 沒有找到future用戶的記錄');
-            }
-
-        } catch (error) {
-            console.error('❌ [簡化邏輯] 獲取最新故事失敗:', error);
-            
-            // 備援：如果有索引問題，使用客戶端排序
-            try {
-                console.log('🔄 [簡化邏輯] 嘗試備援方案：客戶端排序');
-                const { collection, query, where, getDocs } = window.firebaseSDK;
-                const fallbackQuery = query(
-                    collection(db, 'wakeup_records'),
-                    where('userId', '==', getConfiguredUserName())
-                );
-                
-                const fallbackSnapshot = await getDocs(fallbackQuery);
-                
-                if (!fallbackSnapshot.empty) {
-                    const records = [];
-                    fallbackSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.timestamp) {
-                            records.push(data);
-                        }
-                    });
-                    
-                    // 客戶端排序
-                    records.sort((a, b) => {
-                        const aTime = a.timestamp?.toDate?.() || new Date(a.timestamp || 0);
-                        const bTime = b.timestamp?.toDate?.() || new Date(b.timestamp || 0);
-                        return bTime - aTime;  // 降序
-                    });
-                    
-                    if (records.length > 0) {
-                        const latestRecord = records[0];
-                        const storyText = latestRecord.story || latestRecord.greeting || '';
-                        
-                        if (storyText) {
-                            const storyTextEl = document.getElementById('storyText');
-                            if (storyTextEl) {
-                                storyTextEl.textContent = '正在為你朗誦你的甦醒日誌.....';
-                                setTimeout(() => {
-                                    console.log('🎬 [備援] 開始顯示最新故事');
-                                    startStoryTypewriter(storyText);
-                                }, 1000);
-                                return true;
-                            }
-                        }
-                    }
-                }
-            } catch (fallbackError) {
-                console.error('❌ [簡化邏輯] 備援方案也失敗:', fallbackError);
-            }
-        }
-        
-        return false;
+    async function displayLatestStoryFromNotion() {
+        const userName = getConfiguredUserName();
+        const payload = await fetchNotionRecords({ userName, limit: 1 });
+        const latestRecord = normalizeNotionRecord(payload.latest || {});
+        const storyText = latestRecord.story || latestRecord.greeting || '';
+        if (!storyText) return false;
+        const storyTextEl = document.getElementById('storyText');
+        if (!storyTextEl) return false;
+        storyTextEl.textContent = '正在為你朗誦你的甦醒日誌.....';
+        setTimeout(() => startStoryTypewriter(storyText), 1000);
+        return true;
     }
 
-    // 將簡化邏輯暴露給全域，方便調用
-    window.displayLatestStoryFromFirebase = displayLatestStoryFromFirebase;
+    window.displayLatestStoryFromNotion = displayLatestStoryFromNotion;
+    window.displayLatestStoryFromFirebase = displayLatestStoryFromNotion;
 
-    // 🔥 強壯的故事顯示機制 - 多層備援，確保一定有故事！
     async function guaranteedStoryDisplay(cityData) {
-        console.log('🔥 [強壯備援] 啟動多層故事顯示機制...');
-        
         const storyTextEl = document.getElementById('storyText');
-        if (!storyTextEl) {
-            console.error('❌ 找不到故事文字元素，放棄');
+        if (!storyTextEl) return;
+        await new Promise(resolve => setTimeout(resolve, 500));
+        try {
+            const success = await displayLatestStoryFromNotion();
+            if (success) return;
+        } catch (error) {
+            console.log('⚠️ Notion 讀取失敗:', error);
+        }
+
+        const localStory = await generateLocalStory(cityData);
+        if (localStory) {
+            setTimeout(() => startStoryTypewriter(localStory), 500);
             return;
         }
 
-        // 🔧 額外等待，確保Firebase寫入絕對完成
-        console.log('⏰ [強壯備援] 額外等待2秒，確保Firebase寫入完成...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // 第一層：嘗試從Firebase讀取最新記錄
-        try {
-            console.log('🔥 [備援1] 嘗試從Firebase讀取...');
-            const success = await displayLatestStoryFromFirebase();
-            if (success) {
-                console.log('✅ [備援1] Firebase讀取成功');
-                return;
-            }
-        } catch (error) {
-            console.log('⚠️ [備援1] Firebase讀取失敗:', error);
-        }
-
-        // 第二層：最終備案 - 使用generatePiStory API
-        try {
-            console.log('🔥 [備援3] 使用generatePiStory API作為最終備案...');
-            storyTextEl.textContent = '為你重新創作甦醒故事...';
-            const localStory = await generateLocalStory(cityData);
-            if (localStory) {
-                setTimeout(() => {
-                    startStoryTypewriter(localStory);
-                }, 500);
-                console.log('✅ [備援3] generatePiStory API備案成功');
-                return;
-            }
-        } catch (error) {
-            console.log('⚠️ [備援3] generatePiStory API備案也失敗:', error);
-        }
-
-        // 超級最終備案：確保一定有內容
-        console.log('🔥 [超級備案] 確保基本內容顯示...');
         const city = cityData?.city || '未知之地';
         const country = cityData?.country || '神秘國度';
-        const emergencyStory = `今天的你在${country}的${city}醒來。新的一天，新的開始！`;
-        storyTextEl.textContent = '準備甦醒內容...';
-        setTimeout(() => {
-            startStoryTypewriter(emergencyStory);
-        }, 500);
-        console.log('✅ [超級備案] 緊急內容顯示完成');
+        startStoryTypewriter(`今天的你在${country}的${city}醒來。新的一天，新的開始！`);
     }
 
     // API重新生成故事

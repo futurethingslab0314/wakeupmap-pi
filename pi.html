@@ -201,75 +201,18 @@
         </div>
     </div>
 
-    <!-- 1. 首先載入 Firebase 配置 -->
-    <script src="/api/config"></script>
-
-    <!-- 2. 載入 Firebase SDK 並初始化 -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
-        import { 
-            getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken
-        } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
-        import { 
-            getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-            serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-        } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js';
-
-        // 等待 Firebase 配置載入
-        function initializeFirebase() {
-            if (window.firebaseConfig) {
-                try {
-                    console.log('🔥 開始初始化 Firebase...');
-                    const app = initializeApp(window.firebaseConfig);
-                    
-                    // 打包所有 Firebase 功能供主腳本使用
-                    window.firebaseSDK = {
-                        initializeApp,
-                        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-                        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-                        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-                    };
-                    
-                    console.log('✅ Firebase SDK 已準備就緒');
-                    
-                    // 發送 Firebase 就緒事件
-                    window.dispatchEvent(new CustomEvent('firebaseReady'));
-                } catch (error) {
-                    console.error('❌ Firebase 初始化失敗:', error);
-                    // 即使失敗也要設置基本的 SDK
-                    window.firebaseSDK = {
-                        initializeApp,
-                        getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken,
-                        getFirestore, collection, addDoc, query, where, getDocs, orderBy, 
-                        serverTimestamp, doc, setDoc, getDoc, limit, updateDoc, setLogLevel
-                    };
-                }
-            } else {
-                console.warn('⚠️ Firebase 配置尚未載入，2秒後重試...');
-                setTimeout(initializeFirebase, 2000);
-            }
-        }
-
-        // 開始初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeFirebase);
-        } else {
-            initializeFirebase();
-        }
-    </script>
-
-    <!-- 3. 載入 Leaflet 地圖庫 -->
+    <!-- 1. 載入 Leaflet 地圖庫 -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
      crossorigin=""></script>
 
-    <!-- 4. 載入使用者名稱，需要將使用者名稱改成自己的版本，並上傳至自己的vercel link -->
+    <!-- 2. 載入使用者名稱，需要將使用者名稱改成自己的版本，並上傳至自己的vercel link -->
     <script>
       window.env = window.env || {};
-      window.env.USER_NAME = 'yutingpi';
+      window.env.USER_NAME = 'YuPie';
     </script>
     
-    <!-- 5. 載入主要應用程式腳本 -->
+    <!-- 3. 載入主要應用程式腳本 -->
     <script src="pi-script.js"></script>
     
     <script>
