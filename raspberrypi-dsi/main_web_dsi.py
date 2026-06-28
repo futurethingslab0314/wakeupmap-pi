@@ -653,6 +653,8 @@ class WakeUpMapWebApp:
             return {
                 city: document.getElementById('cityName') ? document.getElementById('cityName').textContent : '',
                 country: document.getElementById('countryName') ? document.getElementById('countryName').textContent : '',
+                city_zh: document.getElementById('cityName') ? document.getElementById('cityName').textContent : '',
+                country_zh: document.getElementById('countryName') ? document.getElementById('countryName').textContent : '',
                 countryCode: window.currentCityData ? window.currentCityData.country_iso_code : '',
                 latitude: window.currentCityData ? window.currentCityData.latitude : null,
                 longitude: window.currentCityData ? window.currentCityData.longitude : null,

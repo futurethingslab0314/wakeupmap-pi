@@ -610,7 +610,10 @@ class AudioManager:
                 'groupName': 'Pi',  # Pi群組
                 'city': story_content.get('city', 'Unknown City'),
                 'country': story_content.get('country', 'Unknown Country'),
+                'city_zh': story_content.get('city_zh', story_content.get('city', 'Unknown City')),
+                'country_zh': story_content.get('country_zh', story_content.get('country', 'Unknown Country')),
                 'story': story_content.get('story', ''),
+                'story_zh': story_content.get('story_zh', story_content.get('story', '')),
                 'greeting': story_content.get('greeting', ''),
                 'language': story_content.get('language', ''),
                 'languageCode': story_content.get('languageCode', ''),

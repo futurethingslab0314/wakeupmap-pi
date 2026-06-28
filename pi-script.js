@@ -59,14 +59,14 @@ function updateResultData(data) {
     // 更新城市名稱
     const cityNameEl = document.getElementById('cityName');
     if (cityNameEl && data.city) {
-        cityNameEl.textContent = data.city;
+        cityNameEl.textContent = data.city_zh || data.city;
     }
 
     // 更新國家名稱和國旗
     const countryNameEl = document.getElementById('countryName');
     const countryFlagEl = document.getElementById('countryFlag');
     if (countryNameEl && data.country) {
-        countryNameEl.textContent = data.country;
+        countryNameEl.textContent = data.country_zh || data.country;
     }
     if (countryFlagEl && data.flag) {
         countryFlagEl.src = data.flag;
@@ -121,10 +121,17 @@ window.startTheDay = function() {
     console.log('⚠️ 使用基本版本的 startTheDay 函數');
     try {
         ensureInitialState();
+        if (typeof window.setState === 'function') {
+            window.setState('loading');
+        }
     } catch (e) {
         console.error('❌ 初始化狀態失敗:', e);
     }
     
+    if (typeof window.__realStartTheDay === 'function') {
+        return window.__realStartTheDay();
+    }
+
     return true;
 };
 
@@ -242,6 +249,8 @@ window.addEventListener('piStoryReady', (event) => {
             const resultData = {
                 city: storyData.city || 'Unknown City',
                 country: storyData.country || 'Unknown Country',
+                city_zh: storyData.city_zh || storyData.city || 'Unknown City',
+                country_zh: storyData.country_zh || storyData.country || 'Unknown Country',
                 countryCode: storyData.countryCode || 'XX',
                 latitude: storyData.latitude || 0,
                 longitude: storyData.longitude || 0,
@@ -273,6 +282,8 @@ window.addEventListener('piStoryReady', (event) => {
         const resultData = {
             city: storyData.city || '',
             country: storyData.country || '',
+            city_zh: storyData.city_zh || storyData.city || '',
+            country_zh: storyData.country_zh || storyData.country || '',
             countryCode: storyData.countryCode || '',
             latitude: storyData.latitude || 0,
             longitude: storyData.longitude || 0,
@@ -1071,6 +1082,8 @@ function updateConnectionStatus(connected) {
             const resultData = {
                 city: cityZh,
                 country: countryZh,
+                city_zh: cityZh,
+                country_zh: countryZh,
                 countryCode: cityData.country_iso_code,
                 latitude: cityData.latitude,
                 longitude: cityData.longitude,
@@ -1490,8 +1503,8 @@ function updateConnectionStatus(connected) {
                 city: cityData.name,
                 country: cityData.country,
                 countryIsoCode: cityData.country_iso_code,
-                latitude: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
-                longitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
+                latitude: safeCoordinateValue(cityData.latitude),
+                longitude: safeCoordinateValue(cityData.longitude),
                 timezone: cityData.timezone || '',
                 localTime: cityData.local_time || '',
                 timestamp: serverTimestamp(),
@@ -1543,9 +1556,9 @@ function updateConnectionStatus(connected) {
                     city_zh: cityZh,
                     country_zh: countryZh,
                     country_iso_code: cityData.country_iso_code || '',
-                    latitude: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
-                    longtitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
-                    longitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
+                    latitude: safeCoordinateValue(cityData.latitude),
+                    longtitude: safeCoordinateValue(cityData.longitude),
+                    longitude: safeCoordinateValue(cityData.longitude),
                     timezone: cityData.timezone || 'UTC',
                     localTime: cityData.local_time || new Date().toLocaleTimeString(),
                     targetUTCOffset: 8, // 台灣時區
@@ -1653,9 +1666,9 @@ function updateConnectionStatus(connected) {
                     city_zh: translatedLocation.city_zh || cityData.city || 'Unknown City',
                     country_zh: translatedLocation.country_zh || cityData.country || 'Unknown Country',
                     country_iso_code: cityData.country_iso_code || '',
-                    latitude: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
-                    longtitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
-                    longitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
+                    latitude: safeCoordinateValue(cityData.latitude),
+                    longtitude: safeCoordinateValue(cityData.longitude),
+                    longitude: safeCoordinateValue(cityData.longitude),
                     localTime: cityData.local_time || '',
                     story: updateData.story,
                     story_zh: updateData.story,
@@ -2254,6 +2267,7 @@ function updateResultData(data) {
     }
     console.log('🤖 自動載入使用者資料...');
     loadUserData();
+    window.__realStartTheDay = startTheDay;
     window.startTheDay = startTheDay;
     window.setState = setState;
     console.log('✅ 全域函數已設定');
@@ -2478,6 +2492,11 @@ function normalizeNotionRecord(record) {
         longtitude: typeof record.longtitude === 'number' ? record.longtitude : parseFloat(record.longtitude || 0) || 0,
         latitude: typeof record.latitude === 'number' ? record.latitude : parseFloat(record.latitude || 0) || 0
     };
+}
+
+function safeCoordinateValue(value) {
+    const parsed = typeof value === 'number' ? value : parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
 }
 
 const locationTranslationCache = new Map();
