@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # 配置常數
 WEBSITE_URL = os.getenv('WEBSITE_URL', "https://wakeupmap-pi.vercel.app/pi.html")
-USER_NAME = os.getenv('USER_NAME', 'unknown')  # 從環境變數設定，預設為 unknown
+USER_NAME = os.getenv('USER_NAME', 'YuPie')  # 從環境變數設定，預設為 YuPie
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
 
@@ -211,7 +211,7 @@ class WebControllerDSI:
             except Exception as e:
                 self.logger.warning(f"無法點擊載入按鈕：{e}")
             
-            # 等待 Firebase 初始化完成
+            # 等待前端初始化完成
             time.sleep(3)
             
             # 強制設置用戶資料和啟用按鈕
@@ -234,28 +234,25 @@ class WebControllerDSI:
             if (currentUserIdSpan) currentUserIdSpan.textContent = '{clean_user_name}';
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = '{clean_user_name}';
             
-            // 確保 Firebase 配置存在
-            if (typeof firebaseConfig === 'undefined') {{
-                console.log('🔧 設置預設 Firebase 配置');
-                window.firebaseConfig = window.defaultFirebaseConfig || {{}};
-            }}
-            
             console.log('🔧 用戶資料強制設置完成');
             """
             
             self.driver.execute_script(force_setup_js)
             self.logger.info("✅ 用戶資料強制設置完成")
             
-            # 等待 Firebase 初始化完成
+            # 等待前端初始化完成
             time.sleep(2)
             
             # 觸發強制故事顯示
             story_trigger_js = """
-            if (window.forceDisplayStoryFromFirebase) {
+            if (window.forceDisplayStoryFromNotion) {
                 console.log('🔧 樹莓派觸發強制故事顯示');
+                window.forceDisplayStoryFromNotion();
+            } else if (window.forceDisplayStoryFromFirebase) {
+                console.log('🔧 樹莓派觸發舊版強制故事顯示');
                 window.forceDisplayStoryFromFirebase();
             } else {
-                console.log('⚠️ forceDisplayStoryFromFirebase 函數未找到');
+                console.log('⚠️ forceDisplayStoryFromNotion 函數未找到');
             }
             """
             
