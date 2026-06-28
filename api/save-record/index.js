@@ -29,14 +29,14 @@ function buildNotionProperties(body) {
     const countryZh = getText(body.country_zh);
     const greeting = getText(body.greeting);
     const story = getText(body.story);
-    const storyZh = getText(body.story_zh);
+    const storyZh = getText(body.story_zh) || story;
     const recordedAt = getText(body.recordedAt) || new Date().toISOString();
     const recordedAtDate = getText(body.recordedAtDate) || recordedAt.slice(0, 10);
     const localTime = getText(body.localTime);
     const longitude = getNumber(body.longtitude ?? body.longitude);
     const latitude = getNumber(body.latitude);
 
-    return {
+    const properties = {
         userName: {
             title: buildRichText(userName)
         },
@@ -69,10 +69,18 @@ function buildNotionProperties(body) {
         },
         localTime: {
             rich_text: buildRichText(localTime)
-        },
-        longtitude: longitude === null ? { number: 0 } : { number: longitude },
-        latitude: latitude === null ? { number: 0 } : { number: latitude }
+        }
     };
+
+    if (longitude !== null) {
+        properties.longtitude = { number: longitude };
+    }
+
+    if (latitude !== null) {
+        properties.latitude = { number: latitude };
+    }
+
+    return properties;
 }
 
 async function notionRequest(path, options = {}) {

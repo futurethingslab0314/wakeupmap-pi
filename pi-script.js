@@ -946,14 +946,22 @@ function updateConnectionStatus(connected) {
         console.log('🎨 顯示甦醒結果:', cityData);
         
         try {
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
+            );
+            const cityZh = translatedLocation.city_zh || cityData.name || cityData.city || '';
+            const countryZh = translatedLocation.country_zh || cityData.country || '';
+
             // 設定城市名稱
             if (cityNameEl) {
-                cityNameEl.textContent = cityData.name || cityData.city;
+                cityNameEl.textContent = cityZh;
             }
             
             // 設定國家名稱
             if (countryNameEl) {
-                countryNameEl.textContent = cityData.country;
+                countryNameEl.textContent = countryZh;
             }
             
             // 設定國旗
@@ -977,15 +985,15 @@ function updateConnectionStatus(connected) {
             initClockMap(
                 cityData.latitude,
                 cityData.longitude,
-                cityData.name,
-                cityData.country
+                cityZh,
+                countryZh
             );
             
             // 🔧 移除這裡的軌跡載入 - 現在在 piStoryReady 事件中處理
             // 確保軌跡載入在 result 狀態激活後進行
             
             // 設定結果文字（保持相容性）
-            const resultText = `今天你在 ${cityData.name}, ${cityData.country} 甦醒！`;
+            const resultText = `今天你在 ${cityZh}, ${countryZh} 甦醒！`;
             if (resultTextDiv) resultTextDiv.textContent = resultText;
             
             // 更新除錯資訊（保持相容性）
@@ -1042,6 +1050,14 @@ function updateConnectionStatus(connected) {
             
             const storyResult = await waitForPiStory;
             console.log('📖 收到樹莓派故事，與語音播放內容一致:', storyResult);
+
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
+            );
+            const cityZh = translatedLocation.city_zh || cityData.name || cityData.city || '';
+            const countryZh = translatedLocation.country_zh || cityData.country || '';
             
             // 獲取當前的 day 計數
             const q = query(
@@ -1053,8 +1069,8 @@ function updateConnectionStatus(connected) {
             
             // 更新結果頁面數據 - 只使用樹莓派的故事
             const resultData = {
-                city: cityData.name,
-                country: cityData.country,
+                city: cityZh,
+                country: countryZh,
                 countryCode: cityData.country_iso_code,
                 latitude: cityData.latitude,
                 longitude: cityData.longitude,
@@ -1436,6 +1452,14 @@ function updateConnectionStatus(connected) {
                 return null;
             }
 
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
+            );
+            const cityZh = translatedLocation.city_zh || cityData.name || cityData.city || '';
+            const countryZh = translatedLocation.country_zh || cityData.country || '';
+
             console.log('📊 開始計算 Day 計數...');
             console.log('📊 查詢用戶:', rawUserDisplayName);
 
@@ -1466,8 +1490,8 @@ function updateConnectionStatus(connected) {
                 city: cityData.name,
                 country: cityData.country,
                 countryIsoCode: cityData.country_iso_code,
-                latitude: parseFloat(cityData.latitude),
-                longitude: parseFloat(cityData.longitude),
+                latitude: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
+                longitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
                 timezone: cityData.timezone || '',
                 localTime: cityData.local_time || '',
                 timestamp: serverTimestamp(),
@@ -1478,6 +1502,7 @@ function updateConnectionStatus(connected) {
             // 如果有故事資料，加入記錄中
             if (storyData) {
                 recordData.story = storyData.story || '';
+                recordData.story_zh = storyData.story || '';
                 recordData.greeting = storyData.greeting || '';
                 recordData.language = storyData.language || '';
                 recordData.languageCode = storyData.languageCode || '';
@@ -1513,13 +1538,14 @@ function updateConnectionStatus(connected) {
                     userDisplayName: rawUserDisplayName,
                     dataIdentifier: rawUserDisplayName,
                     groupName: currentGroupName, // 🔧 確保 artifacts 集合包含 groupName: "Pi"
-                    city: cityData.name,
-                    country: cityData.country,
-                    city_zh: cityData.name, // 可加入中文翻譯邏輯
-                    country_zh: cityData.country,
+                    city: cityData.name || cityData.city || '',
+                    country: cityData.country || '',
+                    city_zh: cityZh,
+                    country_zh: countryZh,
                     country_iso_code: cityData.country_iso_code || '',
-                    latitude: parseFloat(cityData.latitude) || 0,
-                    longitude: parseFloat(cityData.longitude) || 0,
+                    latitude: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
+                    longtitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
+                    longitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
                     timezone: cityData.timezone || 'UTC',
                     localTime: cityData.local_time || new Date().toLocaleTimeString(),
                     targetUTCOffset: 8, // 台灣時區
@@ -1527,10 +1553,11 @@ function updateConnectionStatus(connected) {
                     source: 'raspberry_pi_frontend',
                     translationSource: 'frontend_api',
                     timeMinutes: new Date().getHours() * 60 + new Date().getMinutes(),
-                    latitudePreference: parseFloat(cityData.latitude) || 0,
+                    latitudePreference: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
                     latitudeDescription: '',
                     deviceType: 'raspberry_pi_web',
                     story: (storyData && storyData.story) ? storyData.story : '', // 🔧 修復：確實檢查故事內容
+                    story_zh: (storyData && storyData.story) ? storyData.story : '',
                     greeting: (storyData && storyData.greeting) ? storyData.greeting : '', // 🔧 修復：確實檢查問候語內容
                     language: (storyData && storyData.language) ? storyData.language : '',
                     languageCode: (storyData && storyData.languageCode) ? storyData.languageCode : ''
@@ -1611,6 +1638,11 @@ function updateConnectionStatus(connected) {
                 
                 // 從當前城市數據獲取必要資訊
                 const cityData = window.currentCityData || {};
+                const translatedLocation = await translateLocationToChinese(
+                    cityData.name || cityData.city || '',
+                    cityData.country || '',
+                    cityData.country_iso_code || ''
+                );
                 
                 const apiData = {
                     userDisplayName: rawUserDisplayName,
@@ -1618,7 +1650,15 @@ function updateConnectionStatus(connected) {
                     groupName: currentGroupName,
                     city: cityData.city || 'Unknown City',
                     country: cityData.country || 'Unknown Country',
+                    city_zh: translatedLocation.city_zh || cityData.city || 'Unknown City',
+                    country_zh: translatedLocation.country_zh || cityData.country || 'Unknown Country',
+                    country_iso_code: cityData.country_iso_code || '',
+                    latitude: Number.isFinite(Number(cityData.latitude)) ? Number(cityData.latitude) : null,
+                    longtitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
+                    longitude: Number.isFinite(Number(cityData.longitude)) ? Number(cityData.longitude) : null,
+                    localTime: cityData.local_time || '',
                     story: updateData.story,
+                    story_zh: updateData.story,
                     greeting: updateData.greeting,
                     language: updateData.language,
                     languageCode: updateData.languageCode,
@@ -2438,6 +2478,43 @@ function normalizeNotionRecord(record) {
         longtitude: typeof record.longtitude === 'number' ? record.longtitude : parseFloat(record.longtitude || 0) || 0,
         latitude: typeof record.latitude === 'number' ? record.latitude : parseFloat(record.latitude || 0) || 0
     };
+}
+
+const locationTranslationCache = new Map();
+
+async function translateLocationToChinese(city, country, countryCode) {
+    const cacheKey = `${city || ''}::${country || ''}::${countryCode || ''}`;
+    if (locationTranslationCache.has(cacheKey)) {
+        return locationTranslationCache.get(cacheKey);
+    }
+
+    try {
+        const response = await fetch('/api/translate-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city, country, countryCode })
+        });
+
+        if (!response.ok) {
+            throw new Error(`translate-location failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const result = {
+            city_zh: data.city_zh || city || '',
+            country_zh: data.country_zh || country || ''
+        };
+        locationTranslationCache.set(cacheKey, result);
+        return result;
+    } catch (error) {
+        console.warn('⚠️ 地名翻譯失敗，改用原文:', error);
+        const result = {
+            city_zh: city || '',
+            country_zh: country || ''
+        };
+        locationTranslationCache.set(cacheKey, result);
+        return result;
+    }
 }
 
 // 載入並繪製軌跡線
