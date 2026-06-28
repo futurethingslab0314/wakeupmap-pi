@@ -329,9 +329,12 @@ class AudioManager:
                         'language': greeting_data.get('language', ''),
                         'languageCode': language_code,
                         'story': story_text,
+                        'story_zh': story_text,
                         'fullContent': full_content,
                         'city': city_name,
+                        'city_zh': city_data.get('city_zh', city_name) if city_data else city_name,
                         'country': country_name,
+                        'country_zh': city_data.get('country_zh', country_name) if city_data else country_name,
                         'countryCode': country_code,
                         'latitude': city_data.get('latitude', 0) if city_data else 0,
                         'longitude': city_data.get('longitude', 0) if city_data else 0
@@ -618,7 +621,8 @@ class AudioManager:
                 'language': story_content.get('language', ''),
                 'languageCode': story_content.get('languageCode', ''),
                 'latitude': city_data.get('latitude', 0) if city_data else 0,  # 將由前端補充正確的坐標
-                'longitude': city_data.get('longitude', 0) if city_data else 0
+                'longitude': city_data.get('longitude', 0) if city_data else 0,
+                'longtitude': city_data.get('longitude', 0) if city_data else 0
             }
             
             self.logger.info(f"🔥 [Firebase上傳] 準備上傳數據: {api_data}")

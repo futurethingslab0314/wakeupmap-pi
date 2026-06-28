@@ -21,12 +21,95 @@ function buildRichText(text) {
     return [{ type: 'text', text: { content: safeText } }];
 }
 
-function buildNotionProperties(body) {
+function shouldTranslate(chineseValue, englishValue) {
+    const zh = getText(chineseValue);
+    const en = getText(englishValue);
+    if (!en) return false;
+    if (!zh) return true;
+    return zh.toLowerCase() === en.toLowerCase();
+}
+
+async function translateLocationIfNeeded(body) {
+    const city = getText(body.city);
+    const country = getText(body.country);
+    const countryCode = getText(body.countryCode || body.country_iso_code);
+
+    if (!shouldTranslate(body.city_zh, city) && !shouldTranslate(body.country_zh, country)) {
+        return {
+            city_zh: getText(body.city_zh),
+            country_zh: getText(body.country_zh)
+        };
+    }
+
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+        return {
+            city_zh: getText(body.city_zh) || city,
+            country_zh: getText(body.country_zh) || country
+        };
+    }
+
+    const prompt = [
+        '請將以下地名翻譯為繁體中文。',
+        '若原本已是中文請直接保留。',
+        '請只回傳 JSON，格式為 {"city_zh":"","country_zh":""}。',
+        `city: ${city || ''}`,
+        `country: ${country || ''}`,
+        `countryCode: ${countryCode || ''}`
+    ].join('\n');
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${openaiApiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                temperature: 0,
+                response_format: { type: 'json_object' },
+                messages: [
+                    {
+                        role: 'system',
+                        content: '你是地名翻譯助手，請將城市與國家翻譯成標準繁體中文，僅回傳 JSON。'
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`OpenAI translation failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawContent = data?.choices?.[0]?.message?.content || '{}';
+        const parsed = JSON.parse(rawContent);
+
+        return {
+            city_zh: getText(parsed.city_zh) || getText(body.city_zh) || city,
+            country_zh: getText(parsed.country_zh) || getText(body.country_zh) || country
+        };
+    } catch (error) {
+        console.warn('translateLocationIfNeeded failed:', error);
+        return {
+            city_zh: getText(body.city_zh) || city,
+            country_zh: getText(body.country_zh) || country
+        };
+    }
+}
+
+async function buildNotionProperties(body) {
     const userName = getText(body.userName || body.userDisplayName || body.dataIdentifier || 'YuPie') || 'YuPie';
     const city = getText(body.city);
     const country = getText(body.country);
-    const cityZh = getText(body.city_zh);
-    const countryZh = getText(body.country_zh);
+    const translatedLocation = await translateLocationIfNeeded(body);
+    const cityZh = translatedLocation.city_zh;
+    const countryZh = translatedLocation.country_zh;
     const greeting = getText(body.greeting);
     const story = getText(body.story);
     const storyZh = getText(body.story_zh) || story;
@@ -131,7 +214,7 @@ export default async function handler(req, res) {
             return;
         }
 
-        const properties = buildNotionProperties(req.body || {});
+        const properties = await buildNotionProperties(req.body || {});
         const page = await notionRequest('/pages', {
             method: 'POST',
             body: JSON.stringify({

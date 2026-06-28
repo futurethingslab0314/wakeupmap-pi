@@ -116,24 +116,6 @@ function ensureInitialState() {
     window.currentState = currentState;
 }
 
-// 設定基本的全域函數（確保始終可用）
-window.startTheDay = function() {
-    console.log('⚠️ 使用基本版本的 startTheDay 函數');
-    if (typeof window.__realStartTheDay === 'function') {
-        return window.__realStartTheDay();
-    }
-
-    try {
-        if (typeof window.setState === 'function') {
-            window.setState('loading');
-        }
-    } catch (e) {
-        console.error('❌ 初始化狀態失敗:', e);
-    }
-
-    return true;
-};
-
 // DOM 元素（全域聲明，確保可訪問）
 let findCityButton, resultTextDiv, countryFlagImg, mapContainerDiv, debugInfoSmall;
 let userNameInput, setUserNameButton, currentUserIdSpan, currentUserDisplayNameSpan;
@@ -147,6 +129,8 @@ let cityNameEl, countryNameEl, greetingTextEl, coordinatesEl, errorMessageEl;
 
 // 故事相關元素
 let storyTextEl;
+
+let startTheDayInProgress = false;
 
     // 🔧 日誌橋接函數：將前端日誌發送到後端日誌系統
     function logToBackend(level, message, data = null) {
@@ -277,20 +261,25 @@ window.addEventListener('piStoryReady', (event) => {
             }
             return;
         }
+        const currentCityData = window.currentCityData || {};
         const finalStory = storyData.fullContent || storyData.story || '';
+        const mergedLatitude = safeCoordinateValue(storyData.latitude ?? currentCityData.latitude);
+        const mergedLongitude = safeCoordinateValue(storyData.longitude ?? currentCityData.longitude);
         const resultData = {
-            city: storyData.city || '',
-            country: storyData.country || '',
-            city_zh: storyData.city_zh || storyData.city || '',
-            country_zh: storyData.country_zh || storyData.country || '',
-            countryCode: storyData.countryCode || '',
-            latitude: storyData.latitude || 0,
-            longitude: storyData.longitude || 0,
+            city: storyData.city || currentCityData.name || currentCityData.city || '',
+            country: storyData.country || currentCityData.country || '',
+            city_zh: storyData.city_zh || currentCityData.city_zh || storyData.city || currentCityData.name || currentCityData.city || '',
+            country_zh: storyData.country_zh || currentCityData.country_zh || storyData.country || currentCityData.country || '',
+            countryCode: storyData.countryCode || currentCityData.country_iso_code || '',
+            latitude: mergedLatitude ?? 0,
+            longitude: mergedLongitude ?? 0,
             greeting: storyData.greeting || '',
             language: storyData.language || '',
             story: finalStory,
             day: storyData.day || 1,
-            flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
+            flag: (storyData.countryCode || currentCityData.country_iso_code)
+                ? `https://flagcdn.com/96x72/${(storyData.countryCode || currentCityData.country_iso_code).toLowerCase()}.png`
+                : ''
         };
 
         window.voiceStoryDisplayed = true;
@@ -421,6 +410,7 @@ function updateConnectionStatus(connected) {
         
         try {
             currentState = newState;
+            window.currentState = newState;
 
             // 獲取所有狀態元素
             const waitingStateEl = document.getElementById('waitingState');
@@ -778,6 +768,12 @@ function updateConnectionStatus(connected) {
 
     // 開始這一天
     async function startTheDay() {
+        if (startTheDayInProgress) {
+            console.warn('⚠️ startTheDay 已在執行中，忽略重複觸發');
+            return;
+        }
+        startTheDayInProgress = true;
+
         // 立即設置調試標記
         window.debugStartTheDay = 'STARTED';
         
@@ -804,6 +800,7 @@ function updateConnectionStatus(connected) {
             console.log('🎯 準備設定載入狀態...');
             // 設定載入狀態
             setState('loading');
+            await new Promise((resolve) => requestAnimationFrame(() => resolve()));
             console.log('✅ 載入狀態已設定');
 
             if (findCityButton) {
@@ -933,6 +930,7 @@ function updateConnectionStatus(connected) {
                 findCityButton.textContent = '開始這一天';
             }
             console.log('🔄 重設按鈕狀態');
+            startTheDayInProgress = false;
         }
     }
 
@@ -1712,14 +1710,14 @@ function updateResultData(data) {
         // 更新城市名稱
         const cityNameEl = document.getElementById('cityName');
         if (cityNameEl) {
-            cityNameEl.textContent = data.city || 'Unknown City';
+            cityNameEl.textContent = data.city_zh || data.city || 'Unknown City';
         }
 
         // 更新國家名稱和國旗
         const countryNameEl = document.getElementById('countryName');
         const countryFlagEl = document.getElementById('countryFlag');
         if (countryNameEl) {
-            countryNameEl.textContent = data.country || 'Unknown Country';
+            countryNameEl.textContent = data.country_zh || data.country || 'Unknown Country';
         }
         if (countryFlagEl && data.flag) {
             countryFlagEl.src = data.flag;
@@ -1727,10 +1725,12 @@ function updateResultData(data) {
         }
 
         // 更新座標
-        if (data.latitude && data.longitude) {
+        const latitude = safeCoordinateValue(data.latitude);
+        const longitude = safeCoordinateValue(data.longitude);
+        if (latitude !== null && longitude !== null) {
             const coordinatesEl = document.getElementById('coordinates');
             if (coordinatesEl) {
-                coordinatesEl.textContent = `${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`;
+                coordinatesEl.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
             }
             
             // 🔧 不在這裡初始化地圖，統一在 loadHistoryTrajectory 中處理
@@ -1759,80 +1759,10 @@ function updateResultData(data) {
         }
         
         const storyEl = document.getElementById('storyText');
-        if (storyEl) {
-            const currentText = storyEl.textContent;
-            const hasVoiceStory = currentText && 
-                !currentText.includes('正在生成') && 
-                !currentText.includes('正在清喉嚨') && 
-                !currentText.includes('剛起床') &&
-                !currentText.includes('Good Morning! 歡迎使用') &&
-                currentText.length > 30;
-            
-            console.log('🎵 [同步] 故事檢查:', {
-                當前文字長度: currentText?.length || 0,
-                是否有語音故事: hasVoiceStory,
-                全域標記: !!window.voiceStoryDisplayed,
-                當前內容預覽: currentText?.substring(0, 50) + '...'
-            });
-            
-            if (hasVoiceStory) {
-                console.log('✅ [同步] 已有語音故事，跳過重新生成');
-                window.voiceStoryDisplayed = true; // 設置標記
-                return;
-            }
-            
-            storyEl.textContent = '正在生成與語音同步的故事...';
-            console.log('🎵 [同步] 沒有語音故事，開始生成新故事');
-            
-            // 立即調用generatePiStory API
-            setTimeout(async () => {
-                try {
-                    console.log('🎵 [同步] 調用generatePiStory API...');
-                    const response = await fetch('/api/generatePiStory', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            city: data.city || 'Unknown City',
-                            country: data.country || 'Unknown Country'
-                        })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.story) {
-                            console.log('✅ [同步] generatePiStory成功，故事內容:', result.story);
-                            
-                            // 直接開始打字機效果
-                            if (window.startStoryTypewriter) {
-                                console.log('🎬 [同步] 開始打字機效果...');
-                                startStoryTypewriter(result.story);
-                            } else {
-                                console.error('❌ [同步] startStoryTypewriter函數不存在');
-                                storyEl.textContent = result.story;
-                            }
-                            return;
-                        }
-                    }
-                    
-                    console.log('⚠️ [同步] API失敗，使用備案故事');
-                    throw new Error('API失敗');
-                    
-                } catch (error) {
-                    console.error('❌ [同步] generatePiStory失敗:', error);
-                    
-                    // 備案：簡單故事
-                    const backupStory = `今天的你在${data.country || '未知國度'}的${data.city || '未知城市'}醒來。這是一個充滿希望的新開始！`;
-                    console.log('📖 [同步] 使用備案故事:', backupStory);
-                    
-                    if (window.startStoryTypewriter) {
-                        startStoryTypewriter(backupStory);
-                    } else {
-                        storyEl.textContent = backupStory;
-                    }
-                }
-            }, 500);
+        if (storyEl && !storyEl.textContent && data.story) {
+            storyEl.textContent = data.story;
         }
-    }
+}
 
     // 打字機效果相關變數
     let typewriterTimer = null;

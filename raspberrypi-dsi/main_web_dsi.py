@@ -519,8 +519,12 @@ class WakeUpMapWebApp:
                 story: {json.dumps(story_content.get('story', ''), ensure_ascii=False)},
                 fullContent: {json.dumps(story_content.get('fullContent', ''), ensure_ascii=False)},
                 city: {json.dumps(story_content.get('city', ''), ensure_ascii=False)},
+                city_zh: {json.dumps(story_content.get('city_zh', ''), ensure_ascii=False)},
                 country: {json.dumps(story_content.get('country', ''), ensure_ascii=False)},
+                country_zh: {json.dumps(story_content.get('country_zh', ''), ensure_ascii=False)},
                 countryCode: {json.dumps(story_content.get('countryCode', ''), ensure_ascii=False)},
+                latitude: {json.dumps(story_content.get('latitude', None), ensure_ascii=False)},
+                longitude: {json.dumps(story_content.get('longitude', None), ensure_ascii=False)},
                 day: {current_day}
             }};
             
