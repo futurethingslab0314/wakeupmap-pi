@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 # 配置常數
 WEBSITE_URL = os.getenv('WEBSITE_URL', "https://wakeupmap-pi.vercel.app/pi.html")
 USER_NAME = os.getenv('USER_NAME', 'YuPie')  # 從環境變數設定，預設為 YuPie
+DEBUG_BROWSER = os.getenv('DEBUG_BROWSER', 'false').lower() in ('1', 'true', 'yes', 'on')
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
 
@@ -96,15 +97,19 @@ class WebControllerDSI:
         # 記憶體優化
         options.add_argument('--memory-pressure-off')
         options.add_argument('--max_old_space_size=4096')
-        
-        # 網頁顯示設定 (適合 800x480 螢幕)
-        options.add_argument('--window-size=800,480')
-        options.add_argument('--window-position=0,0')
-        
-        # 全螢幕 kiosk 模式，隱藏瀏覽器分頁和工具列
-      #  options.add_argument('--kiosk')
-      #  options.add_argument('--disable-infobars')
-      #  options.add_argument('--hide-scrollbars')
+
+        if DEBUG_BROWSER:
+            # 除錯模式：保留視窗邊框，方便打開 DevTools
+            options.add_argument('--window-size=1200,800')
+            options.add_argument('--window-position=50,50')
+        else:
+            # 顯示模式：固定為 DSI 螢幕尺寸
+            options.add_argument('--window-size=800,480')
+            options.add_argument('--window-position=0,0')
+            options.add_argument('--start-fullscreen')
+            options.add_argument('--kiosk')
+            options.add_argument('--disable-infobars')
+            options.add_argument('--hide-scrollbars')
         
         # 用戶資料目錄
         options.add_argument('--user-data-dir=/tmp/chrome-data')
