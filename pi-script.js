@@ -238,7 +238,9 @@ window.addEventListener('piStoryReady', (event) => {
                 longitude: storyData.longitude || 0,
                 greeting: storyData.greeting || 'Good Morning!',
                 language: storyData.language || 'English',
-                story: storyData.story || 'No story available',
+                story: storyData.story_zh || storyData.story || 'No story available',
+                story_en: storyData.story || '',
+                story_zh: storyData.story_zh || storyData.story || '',
                 day: finalDay,
                 flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
             };
@@ -261,7 +263,7 @@ window.addEventListener('piStoryReady', (event) => {
             return;
         }
         const currentCityData = window.currentCityData || {};
-        const finalStory = storyData.fullContent || storyData.story || '';
+        const finalStory = storyData.fullContent || storyData.story_zh || storyData.story || '';
         const mergedLatitude = safeCoordinateValue(storyData.latitude ?? currentCityData.latitude);
         const mergedLongitude = safeCoordinateValue(storyData.longitude ?? currentCityData.longitude);
         const resultData = {
@@ -275,6 +277,8 @@ window.addEventListener('piStoryReady', (event) => {
             greeting: storyData.greeting || '',
             language: storyData.language || '',
             story: finalStory,
+            story_en: storyData.story || '',
+            story_zh: storyData.story_zh || storyData.story || '',
             day: storyData.day || 1,
             flag: (storyData.countryCode || currentCityData.country_iso_code)
                 ? `https://flagcdn.com/96x72/${(storyData.countryCode || currentCityData.country_iso_code).toLowerCase()}.png`
@@ -1067,8 +1071,8 @@ function updateConnectionStatus(connected) {
             
             // 更新結果頁面數據 - 只使用樹莓派的故事
             const resultData = {
-                city: cityZh,
-                country: countryZh,
+                city: cityData.name || cityData.city || '',
+                country: cityData.country || '',
                 city_zh: cityZh,
                 country_zh: countryZh,
                 countryCode: cityData.country_iso_code,
@@ -1076,7 +1080,9 @@ function updateConnectionStatus(connected) {
                 longitude: cityData.longitude,
                 greeting: storyResult.greeting,
                 language: storyResult.language,
-                story: storyResult.story,
+                story: storyResult.story_zh || storyResult.story,
+                story_en: storyResult.story || '',
+                story_zh: storyResult.story_zh || storyResult.story || '',
                 day: currentDay,
                 flag: cityData.country_iso_code ? `https://flagcdn.com/96x72/${cityData.country_iso_code.toLowerCase()}.png` : ''
             };
@@ -1482,8 +1488,8 @@ function updateConnectionStatus(connected) {
                 latitudePreference: safeCoordinateValue(cityData.latitude),
                 latitudeDescription: '',
                 deviceType: 'raspberry_pi_web',
-                story: (storyData && storyData.story) ? storyData.story : '',
-                story_zh: (storyData && storyData.story) ? storyData.story : '',
+                story: (storyData && (storyData.story_en || storyData.story)) ? (storyData.story_en || storyData.story) : '',
+                story_zh: (storyData && (storyData.story_zh || storyData.story)) ? (storyData.story_zh || storyData.story) : '',
                 greeting: (storyData && storyData.greeting) ? storyData.greeting : '',
                 language: (storyData && storyData.language) ? storyData.language : '',
                 languageCode: (storyData && storyData.languageCode) ? storyData.languageCode : ''
@@ -1518,7 +1524,8 @@ function updateConnectionStatus(connected) {
             }
 
             const updateData = {
-                story: storyData.story || '',
+                story: storyData.story_en || storyData.story || '',
+                story_zh: storyData.story_zh || storyData.story || '',
                 greeting: storyData.greeting || '',
                 language: storyData.language || '',
                 languageCode: storyData.languageCode || ''
@@ -1543,7 +1550,7 @@ function updateConnectionStatus(connected) {
                 longitude: safeCoordinateValue(cityData.longitude),
                 localTime: cityData.local_time || '',
                 story: updateData.story,
-                story_zh: updateData.story,
+                story_zh: updateData.story_zh,
                 greeting: updateData.greeting,
                 language: updateData.language,
                 languageCode: updateData.languageCode,
