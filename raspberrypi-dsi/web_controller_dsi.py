@@ -149,7 +149,7 @@ class WebControllerDSI:
             return False
 
     def load_website(self):
-        """載入網站並等待前端輸入使用者代號"""
+        """載入網站並自動設定"""
         try:
             self.logger.info("正在載入甦醒地圖...")
             
@@ -157,7 +157,13 @@ class WebControllerDSI:
             self.driver.get(self.website_url)
             time.sleep(LOAD_DELAY)
 
-            self.logger.info("網站載入完成，等待前端輸入使用者代號")
+            # 自動填入使用者名稱
+            self._fill_username()
+
+            # 自動點擊載入資料按鈕
+            self._click_load_data_button()
+
+            self.logger.info("網站載入和設定完成")
             return True
             
         except Exception as e:
@@ -188,11 +194,14 @@ class WebControllerDSI:
         """點擊載入資料按鈕"""
         try:
             self.logger.info("正在載入用戶資料...")
+            clean_user_name = self.user_name.strip().upper()
             
             # 確保用戶名稱已設定
             self.driver.execute_script(f"""
                 // 設定全域變數
                 window.rawUserDisplayName = '{clean_user_name}';
+                window.env = window.env || {{}};
+                window.env.USER_NAME = '{clean_user_name}';
                 
                 // 移除：避免污染前端快取
                 // localStorage.setItem('wakeupmap_username', '{clean_user_name}');
@@ -217,6 +226,8 @@ class WebControllerDSI:
             force_setup_js = f"""
             // 強制設置用戶資料
             window.rawUserDisplayName = '{clean_user_name}';
+            window.env = window.env || {{}};
+            window.env.USER_NAME = '{clean_user_name}';
             // 移除：避免污染前端快取
             // localStorage.setItem('wakeupmap_username', '{clean_user_name}');
             

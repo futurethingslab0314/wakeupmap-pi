@@ -10,7 +10,6 @@ import signal
 import logging
 import threading
 import time
-import subprocess
 from typing import Optional
 from pathlib import Path
 
@@ -168,9 +167,6 @@ class WakeUpMapWebApp:
             
             # 初始化網頁
             self._initialize_web()
-
-            # 啟動前端日誌監控，供 UI 指令橋接使用
-            self._start_frontend_log_monitoring()
             
             self.logger.info("應用程式初始化完成")
             
@@ -591,11 +587,6 @@ class WakeUpMapWebApp:
                                     message = log_entry.get('message', '')
                                     data = log_entry.get('data', '')
                                     
-                                    if level == 'ACTION':
-                                        self._handle_frontend_action(message, data)
-                                        last_timestamp = current_timestamp
-                                        continue
-
                                     # 根據日誌級別輸出到對應的後端日誌
                                     if level == 'ERROR':
                                         self.logger.error(f"[前端] {message} {data}")
@@ -626,35 +617,6 @@ class WakeUpMapWebApp:
         self.frontend_log_monitoring_started = True
         self.logger.info("🔧 [日誌橋接] 前端日誌監控已啟動")
 
-    def _handle_frontend_action(self, message: str, data: str = ''):
-        """處理前端傳來的操作指令"""
-        if message == 'OPEN_KEYBOARD':
-            self.logger.info("⌨️ 收到前端請求：開啟螢幕鍵盤")
-            self._launch_on_screen_keyboard()
-        else:
-            self.logger.info(f"🔧 未知前端操作指令: {message} {data}")
-
-    def _launch_on_screen_keyboard(self):
-        """啟動系統螢幕鍵盤"""
-        keyboard_commands = [
-            ['matchbox-keyboard'],
-            ['onboard'],
-            ['florence'],
-            ['squeekboard']
-        ]
-
-        for command in keyboard_commands:
-            try:
-                subprocess.Popen(command)
-                self.logger.info(f"⌨️ 已啟動螢幕鍵盤: {' '.join(command)}")
-                return True
-            except FileNotFoundError:
-                continue
-            except Exception as e:
-                self.logger.warning(f"⌨️ 啟動 {' '.join(command)} 失敗: {e}")
-
-        self.logger.error("⌨️ 找不到可用的螢幕鍵盤程式")
-        return False
     
     def _synchronized_reveal_and_play(self, audio_file: Path):
         """同步顯示畫面和播放音頻"""

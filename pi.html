@@ -66,24 +66,8 @@
                 <button id="zoomOutButton" class="zoom-button" title="縮小">-</button>
             </div>
 
-            <!-- 使用者代號輸入狀態 -->
-            <div id="userSetupState" class="state waiting-state active">
-                <div class="waiting-content-box">
-                    <h1 class="press-button-title blinking-text">ENTER YOUR CODE</h1>
-                    <p class="press-button-subtitle">INPUT YOUR USER IDENTIFIER</p>
-                    <p class="press-button-chinese">請輸入這次上傳要使用的代號</p>
-                    <div style="margin-top: 32px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
-                        <input id="userCodeInput" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="例如：YUPIE" style="width: 360px; max-width: 80vw; padding: 14px 18px; border-radius: 14px; border: 3px solid #f1c40f; font-size: 24px; text-align: center; font-family: 'Press Start 2P', 'Courier New', monospace; background: rgba(255,255,255,0.96); color: #222; text-transform: uppercase;">
-                        <div style="display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;">
-                            <button id="confirmUserButton" type="button" style="padding: 14px 26px; border-radius: 14px; border: 3px solid #4d714f; background: #fffdf2; color: #234; font-size: 18px; font-family: 'Press Start 2P', 'Courier New', monospace; cursor: pointer;">CONFIRM</button>
-                            <button id="openKeyboardButton" type="button" style="padding: 14px 26px; border-radius: 14px; border: 3px solid #2b5f8a; background: #f2fbff; color: #123b5c; font-size: 18px; font-family: 'Press Start 2P', 'Courier New', monospace; cursor: pointer;">KEYBOARD</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <!-- 等待狀態 -->
-            <div id="waitingState" class="state waiting-state">
+            <div id="waitingState" class="state waiting-state active">
                 <!-- 中央內容框 -->
                 <div class="waiting-content-box">
                     <h1 class="press-button-title blinking-text">PRESS THE BUTTON</h1>
@@ -225,7 +209,7 @@
     <!-- 2. 載入使用者名稱，需要將使用者名稱改成自己的版本，並上傳至自己的vercel link -->
     <script>
       window.env = window.env || {};
-      window.env.USER_NAME = '';
+      window.env.USER_NAME = 'YUPIE';
     </script>
     
     <!-- 3. 載入主要應用程式腳本 -->

@@ -4,7 +4,6 @@
 // 全域變數
 let currentDataIdentifier = null;
 let rawUserDisplayName = "";
-let userSessionReady = false;
 function getConfiguredUserName() {
     try {
         const fromWindowEnv = (window && window.env && window.env.USER_NAME) ? String(window.env.USER_NAME).trim() : '';
@@ -94,39 +93,37 @@ function updateResultData(data) {
 
 // 🔧 確保初始狀態正確設定
 function ensureInitialState() {
-    console.log('🔧 確保初始狀態為 userSetup');
-    const userSetupStateEl = document.getElementById('userSetupState');
+    console.log('🔧 確保初始狀態為 waiting');
     const waitingStateEl = document.getElementById('waitingState');
     const loadingStateEl = document.getElementById('loadingState');
     const resultStateEl = document.getElementById('resultState');
     const errorStateEl = document.getElementById('errorState');
     
     // 強制移除所有狀態的 active 類別
-    [userSetupStateEl, waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
+    [waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
         if (el) {
             el.classList.remove('active');
         }
     });
     
-    if (userSetupStateEl) {
-        userSetupStateEl.classList.add('active');
-        console.log('✅ 強制設定 userSetup 狀態為 active');
+    if (waitingStateEl) {
+        waitingStateEl.classList.add('active');
+        console.log('✅ 強制設定 waiting 狀態為 active');
     }
-    
-    currentState = 'userSetup';
+
+    currentState = 'waiting';
     window.currentState = currentState;
 }
 
 // DOM 元素（全域聲明，確保可訪問）
 let findCityButton, resultTextDiv, countryFlagImg, mapContainerDiv, debugInfoSmall;
 let userNameInput, setUserNameButton, currentUserIdSpan, currentUserDisplayNameSpan;
-let userCodeInput, confirmUserButton, openKeyboardButton;
 let historyListUl, historyMapContainerDiv, historyDebugInfoSmall, refreshHistoryButton;
 let globalDateInput, refreshGlobalMapButton, globalTodayMapContainerDiv, globalTodayDebugInfoSmall;
 let groupNameInput, groupFilterSelect, connectionStatus;
 
 // 新增：顯示狀態元素
-let userSetupStateEl, waitingStateEl, resultStateEl, loadingStateEl, errorStateEl;
+let waitingStateEl, resultStateEl, loadingStateEl, errorStateEl;
 let cityNameEl, countryNameEl, greetingTextEl, coordinatesEl, errorMessageEl;
 
 // 故事相關元素
@@ -314,9 +311,6 @@ window.addEventListener('piStoryReady', (event) => {
         debugInfoSmall = document.getElementById('debugInfoSmall');
         userNameInput = document.getElementById('userName');
         setUserNameButton = document.getElementById('setUserNameButton');
-        userCodeInput = document.getElementById('userCodeInput');
-        confirmUserButton = document.getElementById('confirmUserButton');
-        openKeyboardButton = document.getElementById('openKeyboardButton');
         currentUserIdSpan = document.getElementById('currentUserId');
         currentUserDisplayNameSpan = document.getElementById('currentUserDisplayName');
         historyListUl = document.getElementById('historyList');
@@ -332,7 +326,6 @@ window.addEventListener('piStoryReady', (event) => {
         connectionStatus = document.getElementById('connectionStatus');
 
         // 新增：獲取狀態顯示元素
-        userSetupStateEl = document.getElementById('userSetupState');
         waitingStateEl = document.getElementById('waitingState');
         resultStateEl = document.getElementById('resultState');
         loadingStateEl = document.getElementById('loadingState');
@@ -356,11 +349,8 @@ window.addEventListener('piStoryReady', (event) => {
         console.log('✅ DOM 元素取得完成');
         console.log('🔘 findCityButton:', findCityButton ? '找到' : '未找到');
         console.log('🔘 setUserNameButton:', setUserNameButton ? '找到' : '未找到');
-        console.log('🔘 confirmUserButton:', confirmUserButton ? '找到' : '未找到');
-        console.log('🔘 openKeyboardButton:', openKeyboardButton ? '找到' : '未找到');
         console.log('🔘 findCityButton.disabled:', findCityButton ? findCityButton.disabled : 'N/A');
         console.log('🎨 顯示狀態元素:', {
-            userSetup: userSetupStateEl ? '找到' : '未找到',
             waiting: waitingStateEl ? '找到' : '未找到',
             result: resultStateEl ? '找到' : '未找到',
             loading: loadingStateEl ? '找到' : '未找到',
@@ -413,43 +403,6 @@ function updateConnectionStatus(connected) {
         }
     }
 
-    function finalizeUserCodeEntry(userCode) {
-        const trimmedCode = String(userCode || '').trim();
-        if (!trimmedCode) {
-            console.warn('⚠️ 使用者代號為空，忽略');
-            if (userCodeInput) {
-                userCodeInput.focus();
-            }
-            return false;
-        }
-
-        const normalizedCode = trimmedCode.toUpperCase();
-
-        rawUserDisplayName = normalizedCode;
-        userSessionReady = true;
-        window.env = window.env || {};
-        window.env.USER_NAME = normalizedCode;
-
-        if (userNameInput) userNameInput.value = normalizedCode;
-        if (userCodeInput) userCodeInput.value = normalizedCode;
-        if (currentUserIdSpan) currentUserIdSpan.textContent = normalizedCode;
-        if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = normalizedCode;
-        if (findCityButton) findCityButton.disabled = false;
-
-        console.log('✅ 使用者代號已確認:', normalizedCode);
-        loadUserData();
-        setState('waiting');
-        return true;
-    }
-
-    function requestOnScreenKeyboard() {
-        console.log('⌨️ 請求開啟螢幕鍵盤');
-        logToBackend('ACTION', 'OPEN_KEYBOARD');
-        if (userCodeInput) {
-            userCodeInput.focus();
-        }
-    }
-
     // 新增：狀態管理函數
     function setState(newState, message = '') {
         console.log(`🔄 狀態切換: ${currentState} -> ${newState}`);
@@ -459,14 +412,12 @@ function updateConnectionStatus(connected) {
             window.currentState = newState;
 
             // 獲取所有狀態元素
-            const userSetupStateEl = document.getElementById('userSetupState');
             const waitingStateEl = document.getElementById('waitingState');
             const loadingStateEl = document.getElementById('loadingState');
             const resultStateEl = document.getElementById('resultState');
             const errorStateEl = document.getElementById('errorState');
 
             console.log('🔍 狀態元素檢查:', {
-                userSetup: !!userSetupStateEl,
                 waiting: !!waitingStateEl,
                 loading: !!loadingStateEl,
                 result: !!resultStateEl,
@@ -474,7 +425,7 @@ function updateConnectionStatus(connected) {
             });
 
             // 移除所有 active 類別
-            [userSetupStateEl, waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
+            [waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
                 if (el) {
                     el.classList.remove('active');
                 }
@@ -482,14 +433,6 @@ function updateConnectionStatus(connected) {
 
             // 根據新狀態啟動相應元素
             switch (newState) {
-                case 'userSetup':
-                    if (userSetupStateEl) {
-                        userSetupStateEl.classList.add('active');
-                        console.log('✅ 使用者設定狀態啟動');
-                    } else {
-                        console.error('❌ 使用者設定狀態元素未找到');
-                    }
-                    break;
                 case 'waiting':
                     if (waitingStateEl) {
                         waitingStateEl.classList.add('active');
@@ -771,16 +714,17 @@ function updateConnectionStatus(connected) {
                 return;
             }
 
-            if (!rawUserDisplayName) {
-                console.warn('⚠️ 尚未設定使用者代號，暫停載入');
-                return;
-            }
-
             setUserNameButton.disabled = true;
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            rawUserDisplayName = String(rawUserDisplayName).trim();
+            rawUserDisplayName = getConfiguredUserName();
+            if (!rawUserDisplayName) {
+                console.warn('⚠️ 尚未設定 USER_NAME，跳過載入');
+                setUserNameButton.textContent = '未設定使用者';
+                setUserNameButton.disabled = false;
+                return;
+            }
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
             // 更新顯示
@@ -828,15 +772,11 @@ function updateConnectionStatus(connected) {
 
     // 開始這一天
     async function startTheDay() {
-        if (!userSessionReady || !rawUserDisplayName) {
-            console.warn('⚠️ 尚未輸入使用者代號，無法開始');
-            setState('userSetup');
-            if (userCodeInput) {
-                userCodeInput.focus();
-            }
+        if (!rawUserDisplayName) {
+            console.warn('⚠️ 尚未設定 USER_NAME，無法開始');
+            setState('waiting');
             return;
         }
-
         if (startTheDayInProgress) {
             console.warn('⚠️ startTheDay 已在執行中，忽略重複觸發');
             return;
@@ -2034,32 +1974,6 @@ function updateResultData(data) {
             console.error('❌ setUserNameButton 未找到，無法設定事件');
         }
 
-        if (confirmUserButton) {
-            confirmUserButton.addEventListener('click', () => {
-                console.log('🔘 確認使用者代號按鈕被點擊');
-                finalizeUserCodeEntry(userCodeInput ? userCodeInput.value : '');
-            });
-            console.log('✅ 確認使用者代號按鈕事件已設定');
-        }
-
-        if (openKeyboardButton) {
-            openKeyboardButton.addEventListener('click', () => {
-                console.log('🔘 KEYBOARD 按鈕被點擊');
-                requestOnScreenKeyboard();
-            });
-            console.log('✅ KEYBOARD 按鈕事件已設定');
-        }
-
-        if (userCodeInput) {
-            userCodeInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    finalizeUserCodeEntry(userCodeInput.value);
-                }
-            });
-            console.log('✅ 使用者代號輸入框 Enter 事件已設定');
-        }
-
         if (findCityButton) {
             findCityButton.addEventListener('click', () => {
                 console.log('🔘 開始這一天按鈕被點擊');
@@ -2104,16 +2018,13 @@ function updateResultData(data) {
 
     // 不再需要舊的後端認證，直接初始化使用者與狀態
     updateConnectionStatus(true);
-    console.log('🔧 設定初始使用者輸入狀態');
-    setState('userSetup');
+    console.log('🔧 設定初始等待狀態');
+    setState('waiting');
     if (findCityButton) {
-        findCityButton.disabled = true;
+        findCityButton.disabled = false;
     }
-    setTimeout(() => {
-        if (userCodeInput) {
-            userCodeInput.focus();
-        }
-    }, 200);
+    console.log('🤖 自動載入使用者資料...');
+    loadUserData();
     window.__realStartTheDay = startTheDay;
     window.startTheDay = startTheDay;
     window.setState = setState;
@@ -2967,11 +2878,6 @@ window.checkTrajectory = function() {
     const maxUserDataLoadAttempts = 3;
     
     function monitorUserDataLoad() {
-        if (!userSessionReady) {
-            console.log('🔒 尚未完成使用者代號輸入，略過自動監控');
-            return;
-        }
-
         // 檢查是否載入成功（需為有效名稱）
         if (rawUserDisplayName && rawUserDisplayName !== 'future' && rawUserDisplayName !== 'unknown') {
             console.log('✅ 用戶資料已載入:', rawUserDisplayName);
@@ -3159,7 +3065,6 @@ window.checkTrajectory = function() {
 setTimeout(() => {
     console.log('🚨 執行最終強制初始狀態檢查...');
     
-    const userSetupStateEl = document.getElementById('userSetupState');
     const waitingStateEl = document.getElementById('waitingState');
     const loadingStateEl = document.getElementById('loadingState');
     const resultStateEl = document.getElementById('resultState');
@@ -3167,7 +3072,6 @@ setTimeout(() => {
     
     // 檢查當前狀態
     console.log('🔍 當前狀態檢查:', {
-        userSetupActive: userSetupStateEl?.classList.contains('active'),
         waitingActive: waitingStateEl?.classList.contains('active'),
         loadingActive: loadingStateEl?.classList.contains('active'),
         resultActive: resultStateEl?.classList.contains('active'),
@@ -3177,14 +3081,13 @@ setTimeout(() => {
     
     // 🔧 只在沒有任何狀態活躍時才強制設定等待狀態
     const hasActiveState = 
-        userSetupStateEl?.classList.contains('active') ||
         waitingStateEl?.classList.contains('active') ||
         loadingStateEl?.classList.contains('active') ||
         resultStateEl?.classList.contains('active') ||
         errorStateEl?.classList.contains('active');
     
     if (!hasActiveState) {
-        console.log('🔧 沒有活躍狀態，設定使用者輸入狀態');
+        console.log('🔧 沒有活躍狀態，設定等待狀態');
         
         // 移除所有狀態
         [waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
@@ -3193,12 +3096,12 @@ setTimeout(() => {
             }
         });
         
-        if (userSetupStateEl) {
-            userSetupStateEl.classList.add('active');
-            console.log('✅ 使用者輸入狀態已設定');
+        if (waitingStateEl) {
+            waitingStateEl.classList.add('active');
+            console.log('✅ 等待狀態已設定');
         }
         
-        window.currentState = userSessionReady ? 'waiting' : 'userSetup';
+        window.currentState = 'waiting';
     } else {
         console.log('🔧 保持當前活躍狀態:', window.currentState, '不強制設定等待狀態');
     }
