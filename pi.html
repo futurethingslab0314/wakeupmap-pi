@@ -65,9 +65,22 @@
                 <button id="zoomInButton" class="zoom-button" title="放大">+</button>
                 <button id="zoomOutButton" class="zoom-button" title="縮小">-</button>
             </div>
+
+            <!-- 使用者代號輸入狀態 -->
+            <div id="userSetupState" class="state waiting-state active">
+                <div class="waiting-content-box">
+                    <h1 class="press-button-title blinking-text">ENTER YOUR CODE</h1>
+                    <p class="press-button-subtitle">INPUT YOUR USER IDENTIFIER</p>
+                    <p class="press-button-chinese">請輸入這次上傳要使用的代號</p>
+                    <div style="margin-top: 32px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                        <input id="userCodeInput" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="例如：YuPie" style="width: 360px; max-width: 80vw; padding: 14px 18px; border-radius: 14px; border: 3px solid #f1c40f; font-size: 24px; text-align: center; font-family: 'Press Start 2P', 'Courier New', monospace; background: rgba(255,255,255,0.96); color: #222;">
+                        <button id="confirmUserButton" type="button" style="padding: 14px 26px; border-radius: 14px; border: 3px solid #4d714f; background: #fffdf2; color: #234; font-size: 18px; font-family: 'Press Start 2P', 'Courier New', monospace; cursor: pointer;">CONFIRM</button>
+                    </div>
+                </div>
+            </div>
             
             <!-- 等待狀態 -->
-            <div id="waitingState" class="state waiting-state active">
+            <div id="waitingState" class="state waiting-state">
                 <!-- 中央內容框 -->
                 <div class="waiting-content-box">
                     <h1 class="press-button-title blinking-text">PRESS THE BUTTON</h1>
@@ -159,7 +172,7 @@
         <!-- 隱藏元素 (用於保持相容性) -->
         <div style="display: none;">
             <input type="hidden" id="groupName" value="">
-            <input type="hidden" id="userName" value="YuPie">
+            <input type="hidden" id="userName" value="">
             
             <!-- 虛擬按鈕元素，供原有 JavaScript 相容 -->
             <button id="setUserNameButton" class="load-button">載入資料</button>
@@ -169,8 +182,8 @@
             <div id="resultText" class="result-text"></div>
             <div id="debugInfo" class="debug-info"></div>
             <div id="debugInfoSmall" class="debug-info-small"></div>
-            <div id="currentUserId">YuPie</div>
-            <div id="currentUserDisplayName">YuPie</div>
+            <div id="currentUserId"></div>
+            <div id="currentUserDisplayName"></div>
             
             <!-- 分頁相關隱藏元素 -->
             <ul id="historyList"></ul>
@@ -209,7 +222,7 @@
     <!-- 2. 載入使用者名稱，需要將使用者名稱改成自己的版本，並上傳至自己的vercel link -->
     <script>
       window.env = window.env || {};
-      window.env.USER_NAME = 'YuPie';
+      window.env.USER_NAME = '';
     </script>
     
     <!-- 3. 載入主要應用程式腳本 -->

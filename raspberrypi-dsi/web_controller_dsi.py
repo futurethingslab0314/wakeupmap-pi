@@ -149,21 +149,15 @@ class WebControllerDSI:
             return False
 
     def load_website(self):
-        """載入網站並自動設定"""
+        """載入網站並等待前端輸入使用者代號"""
         try:
             self.logger.info("正在載入甦醒地圖...")
             
             # 開啟網站
             self.driver.get(self.website_url)
             time.sleep(LOAD_DELAY)
-            
-            # 自動填入使用者名稱
-            self._fill_username()
-            
-            # 自動點擊載入資料按鈕
-            self._click_load_data_button()
-            
-            self.logger.info("網站載入和設定完成")
+
+            self.logger.info("網站載入完成，等待前端輸入使用者代號")
             return True
             
         except Exception as e:
