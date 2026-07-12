@@ -8,7 +8,7 @@ let userSessionReady = false;
 function getConfiguredUserName() {
     try {
         const fromWindowEnv = (window && window.env && window.env.USER_NAME) ? String(window.env.USER_NAME).trim() : '';
-        return fromWindowEnv && fromWindowEnv.length > 0 ? fromWindowEnv : '';
+        return fromWindowEnv && fromWindowEnv.length > 0 ? fromWindowEnv.toUpperCase() : '';
     } catch (e) {
         return '';
     }
@@ -120,7 +120,7 @@ function ensureInitialState() {
 // DOM 元素（全域聲明，確保可訪問）
 let findCityButton, resultTextDiv, countryFlagImg, mapContainerDiv, debugInfoSmall;
 let userNameInput, setUserNameButton, currentUserIdSpan, currentUserDisplayNameSpan;
-let userCodeInput, confirmUserButton;
+let userCodeInput, confirmUserButton, openKeyboardButton;
 let historyListUl, historyMapContainerDiv, historyDebugInfoSmall, refreshHistoryButton;
 let globalDateInput, refreshGlobalMapButton, globalTodayMapContainerDiv, globalTodayDebugInfoSmall;
 let groupNameInput, groupFilterSelect, connectionStatus;
@@ -316,6 +316,7 @@ window.addEventListener('piStoryReady', (event) => {
         setUserNameButton = document.getElementById('setUserNameButton');
         userCodeInput = document.getElementById('userCodeInput');
         confirmUserButton = document.getElementById('confirmUserButton');
+        openKeyboardButton = document.getElementById('openKeyboardButton');
         currentUserIdSpan = document.getElementById('currentUserId');
         currentUserDisplayNameSpan = document.getElementById('currentUserDisplayName');
         historyListUl = document.getElementById('historyList');
@@ -356,6 +357,7 @@ window.addEventListener('piStoryReady', (event) => {
         console.log('🔘 findCityButton:', findCityButton ? '找到' : '未找到');
         console.log('🔘 setUserNameButton:', setUserNameButton ? '找到' : '未找到');
         console.log('🔘 confirmUserButton:', confirmUserButton ? '找到' : '未找到');
+        console.log('🔘 openKeyboardButton:', openKeyboardButton ? '找到' : '未找到');
         console.log('🔘 findCityButton.disabled:', findCityButton ? findCityButton.disabled : 'N/A');
         console.log('🎨 顯示狀態元素:', {
             userSetup: userSetupStateEl ? '找到' : '未找到',
@@ -421,20 +423,31 @@ function updateConnectionStatus(connected) {
             return false;
         }
 
-        rawUserDisplayName = trimmedCode;
+        const normalizedCode = trimmedCode.toUpperCase();
+
+        rawUserDisplayName = normalizedCode;
         userSessionReady = true;
         window.env = window.env || {};
-        window.env.USER_NAME = trimmedCode;
+        window.env.USER_NAME = normalizedCode;
 
-        if (userNameInput) userNameInput.value = trimmedCode;
-        if (currentUserIdSpan) currentUserIdSpan.textContent = trimmedCode;
-        if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = trimmedCode;
+        if (userNameInput) userNameInput.value = normalizedCode;
+        if (userCodeInput) userCodeInput.value = normalizedCode;
+        if (currentUserIdSpan) currentUserIdSpan.textContent = normalizedCode;
+        if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = normalizedCode;
         if (findCityButton) findCityButton.disabled = false;
 
-        console.log('✅ 使用者代號已確認:', trimmedCode);
+        console.log('✅ 使用者代號已確認:', normalizedCode);
         loadUserData();
         setState('waiting');
         return true;
+    }
+
+    function requestOnScreenKeyboard() {
+        console.log('⌨️ 請求開啟螢幕鍵盤');
+        logToBackend('ACTION', 'OPEN_KEYBOARD');
+        if (userCodeInput) {
+            userCodeInput.focus();
+        }
     }
 
     // 新增：狀態管理函數
@@ -2027,6 +2040,14 @@ function updateResultData(data) {
                 finalizeUserCodeEntry(userCodeInput ? userCodeInput.value : '');
             });
             console.log('✅ 確認使用者代號按鈕事件已設定');
+        }
+
+        if (openKeyboardButton) {
+            openKeyboardButton.addEventListener('click', () => {
+                console.log('🔘 KEYBOARD 按鈕被點擊');
+                requestOnScreenKeyboard();
+            });
+            console.log('✅ KEYBOARD 按鈕事件已設定');
         }
 
         if (userCodeInput) {
