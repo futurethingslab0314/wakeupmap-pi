@@ -25,7 +25,7 @@
 - 一個電位器
 - 一個 4 段波段開關
 - 一個 speaker
-- GitHub 帳號與專案網址
+- GitHub 帳號與 `yutingpi` 專案網址
 
 ---
 
@@ -150,6 +150,8 @@ sudo apt install -y git curl
 
 如果你是第一次使用這個專案，最簡單的方式就是從 GitHub 下載。
 
+> 這份 README 對應的是 `yutingpi` 版本。請下載你 GitHub 上的 `yutingpi` repo，不要下載舊的 DSI 版本。
+
 ### 3-1. 先選一個你要放專案的資料夾
 
 常見位置是：
@@ -171,12 +173,12 @@ cd ~/Documents/GitHub
 git clone <你的 GitHub Repo URL>
 ```
 
-如果你是從自己的 GitHub 倉庫下載，請把 `<你的 GitHub Repo URL>` 換成你的實際網址。
+如果你是從自己的 GitHub 倉庫下載，請把 `<你的 GitHub Repo URL>` 換成 `yutingpi` 這個 repo 的實際網址。
 
 例如：
 
 ```bash
-git clone https://github.com/yourname/wakeupmap-pi.git
+git clone https://github.com/yourname/yutingpi.git
 ```
 
 ### 3-3. 進入專案資料夾
@@ -269,7 +271,8 @@ nano .env
 ```env
 PORT=3000
 USER_NAME=YuPie
-GEMINI_API_KEY=你的_GEMINI_API_金鑰
+OPENAI_API_KEY=你的_OPENAI_API_金鑰
+OPENAI_MODEL=gpt-4o-mini
 WEBSITE_URL=http://127.0.0.1:3000
 ```
 
@@ -277,8 +280,19 @@ WEBSITE_URL=http://127.0.0.1:3000
 
 - `PORT`：本機網站埠號
 - `USER_NAME`：這台 Raspberry Pi 顯示的使用者名稱
-- `GEMINI_API_KEY`：如果你要用摘要服務，可以填
+- `OPENAI_API_KEY`：後端實際使用的 API key，放在 Raspberry Pi 本機 `.env`
+- `OPENAI_MODEL`：要用哪個 OpenAI 模型來生成故事摘要，預設是 `gpt-4o-mini`
 - `WEBSITE_URL`：DSI / browser 要打開的網址
+
+### 6-4. API key 要放在哪裡？
+
+這個 `square` 版本的 API 呼叫是由 Raspberry Pi 本機的 `Node.js server` 負責處理，所以：
+
+- API key 要放在 Raspberry Pi 本機的 `.env`
+- 不要把 API key 寫進前端 `index.html`
+- 不要把 API key 上傳到 GitHub
+
+如果你之後要換成別的金鑰，只要改本機 `.env`，再重新啟動就可以。
 
 ---
 
@@ -304,6 +318,7 @@ USER_NAME=Pi-North
 
 - 一台 Pi 用一個固定名稱
 - `square` 和 `DSI` 的 `USER_NAME` 最好一致
+- 如果你有多台 Raspberry Pi，可以讓每台的 `.env` 使用不同 `USER_NAME`
 
 ---
 

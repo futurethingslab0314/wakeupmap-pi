@@ -3,14 +3,6 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
-// Attempt to load Google Gen AI SDK
-let GoogleGenAI;
-try {
-  GoogleGenAI = require('@google/genai').GoogleGenAI;
-} catch (e) {
-  console.warn('Note: @google/genai package is not installed. Summarization will use local fallback.');
-}
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 let liveStoryState = null;
@@ -45,18 +37,12 @@ try {
   ];
 }
 
-// Lazy initialization of Gemini Client
-let ai = null;
-function getGeminiClient() {
-  if (!ai && GoogleGenAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
-      ai = new GoogleGenAI({ apiKey });
-    } else {
-      console.warn("GEMINI_API_KEY is not defined in environment variables. Using fallback summarizer.");
-    }
+function getOpenAIKey() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn("OPENAI_API_KEY is not defined in environment variables. Using fallback summarizer.");
   }
-  return ai;
+  return apiKey;
 }
 
 // Fallback logic
@@ -69,22 +55,41 @@ function getFallbackSummary(story, language) {
   }
 }
 
-// Resilient retry function with backoff for transient Gemini API errors (503, 429, etc.)
-async function callGeminiWithRetry(client, options, maxRetries = 2, delayMs = 1200) {
+// Resilient retry function with backoff for transient OpenAI API errors (429, 5xx, etc.)
+async function callOpenAIWithRetry(payload, maxRetries = 2, delayMs = 1200) {
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
     try {
-      return await client.models.generateContent(options);
+      const apiKey = getOpenAIKey();
+      if (!apiKey) {
+        return null;
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        const error = new Error(`OpenAI API error ${response.status}: ${errText}`);
+        error.status = response.status;
+        throw error;
+      }
+
+      return await response.json();
     } catch (err) {
-      const isTransient = err?.status === "UNAVAILABLE" || 
-                          err?.code === 503 || 
-                          err?.status === "RESOURCE_EXHAUSTED" || 
-                          err?.code === 429 ||
-                          err?.message?.includes("experiencing high demand") || 
+      const isTransient = err?.status === 429 ||
+                          (typeof err?.status === "number" && err.status >= 500) ||
                           err?.message?.includes("temporary") ||
-                          err?.message?.includes("UNAVAILABLE");
+                          err?.message?.includes("rate limit") ||
+                          err?.message?.includes("timeout");
       
       if (isTransient && attempt <= maxRetries) {
-        console.warn(`Gemini API temporary error (attempt ${attempt}/${maxRetries + 1}): ${err?.message || err}. Retrying in ${delayMs * attempt}ms...`);
+        console.warn(`OpenAI API temporary error (attempt ${attempt}/${maxRetries + 1}): ${err?.message || err}. Retrying in ${delayMs * attempt}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
         continue;
       }
@@ -122,15 +127,15 @@ app.get('/api/live-story', (req, res) => {
   res.json(liveStoryState);
 });
 
-// 2. API: Summarize Story with Gemini
+// 2. API: Summarize Story with OpenAI
 app.post('/api/summarize-story', async (req, res) => {
   const { story, language } = req.body;
   if (!story) {
     return res.status(400).json({ error: "Story is required" });
   }
 
-  const client = getGeminiClient();
-  if (!client) {
+  const apiKey = getOpenAIKey();
+  if (!apiKey) {
     return res.json({ summary: getFallbackSummary(story, language) });
   }
 
@@ -139,15 +144,25 @@ app.post('/api/summarize-story', async (req, res) => {
       ? `請將以下關於城市的早晨故事，縮寫成 30 到 50 個字（繁體中文）的簡短精彩介紹，不要有任何多餘的前言或後記："${story}"`
       : `Summarize this city morning story in exactly 30 to 50 words: "${story}"`;
 
-    const response = await callGeminiWithRetry(client, {
-      model: "gemini-3.5-flash",
-      contents: prompt,
+    const response = await callOpenAIWithRetry({
+      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You write concise, vivid story summaries for a wake-up city experience.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        }
+      ],
+      temperature: 0.7,
     });
 
-    const summary = response.text?.trim() || story;
+    const summary = response?.choices?.[0]?.message?.content?.trim() || story;
     res.json({ summary });
   } catch (err) {
-    console.warn("Gemini summarization error:", err.message || err);
+    console.warn("OpenAI summarization error:", err.message || err);
     res.json({ summary: getFallbackSummary(story, language) });
   }
 });
