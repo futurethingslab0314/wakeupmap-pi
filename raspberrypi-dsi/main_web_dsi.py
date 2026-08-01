@@ -519,8 +519,12 @@ class WakeUpMapWebApp:
                 story: {json.dumps(story_content.get('story', ''), ensure_ascii=False)},
                 fullContent: {json.dumps(story_content.get('fullContent', ''), ensure_ascii=False)},
                 city: {json.dumps(story_content.get('city', ''), ensure_ascii=False)},
+                city_zh: {json.dumps(story_content.get('city_zh', ''), ensure_ascii=False)},
                 country: {json.dumps(story_content.get('country', ''), ensure_ascii=False)},
+                country_zh: {json.dumps(story_content.get('country_zh', ''), ensure_ascii=False)},
                 countryCode: {json.dumps(story_content.get('countryCode', ''), ensure_ascii=False)},
+                latitude: {json.dumps(story_content.get('latitude', None), ensure_ascii=False)},
+                longitude: {json.dumps(story_content.get('longitude', None), ensure_ascii=False)},
                 day: {current_day}
             }};
             
@@ -531,6 +535,16 @@ class WakeUpMapWebApp:
             
             console.log('🎵 樹莓派故事內容已準備完成:', window.piGeneratedStory);
             console.log('🎵 即將觸發 piStoryReady 事件，Day: {current_day}');
+            
+            if (window.pushLiveStoryToServer) {{
+                window.pushLiveStoryToServer(window.piGeneratedStory);
+            }} else {{
+                fetch('/api/live-story', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify(window.piGeneratedStory)
+                }}).catch(() => {{}});
+            }}
             """
             
             self.web_controller.driver.execute_script(story_js)
@@ -612,6 +626,7 @@ class WakeUpMapWebApp:
         monitor_thread.start()
         self.frontend_log_monitoring_started = True
         self.logger.info("🔧 [日誌橋接] 前端日誌監控已啟動")
+
     
     def _synchronized_reveal_and_play(self, audio_file: Path):
         """同步顯示畫面和播放音頻"""
@@ -653,6 +668,8 @@ class WakeUpMapWebApp:
             return {
                 city: document.getElementById('cityName') ? document.getElementById('cityName').textContent : '',
                 country: document.getElementById('countryName') ? document.getElementById('countryName').textContent : '',
+                city_zh: document.getElementById('cityName') ? document.getElementById('cityName').textContent : '',
+                country_zh: document.getElementById('countryName') ? document.getElementById('countryName').textContent : '',
                 countryCode: window.currentCityData ? window.currentCityData.country_iso_code : '',
                 latitude: window.currentCityData ? window.currentCityData.latitude : null,
                 longitude: window.currentCityData ? window.currentCityData.longitude : null,
