@@ -40,7 +40,7 @@ import platform
 logger = logging.getLogger(__name__)
 
 # 配置常數
-WEBSITE_URL = os.getenv('WEBSITE_URL', "https://wakeupmap-pi.vercel.app/pi.html")
+WEBSITE_URL = os.getenv('WEBSITE_URL', "http://127.0.0.1:3000")
 USER_NAME = os.getenv('USER_NAME', 'YuPie')  # 從環境變數設定，預設為 YuPie
 DEBUG_BROWSER = os.getenv('DEBUG_BROWSER', 'false').lower() in ('1', 'true', 'yes', 'on')
 WAIT_TIMEOUT = 30

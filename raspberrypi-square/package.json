@@ -1,0 +1,16 @@
+{
+  "name": "raspberrypi-terminal-monitor",
+  "version": "1.0.0",
+  "description": "Standalone Raspberry Pi Terminal Monitor UI & Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^0.1.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "author": "YUUT DESIGN",
+  "license": "MIT"
+}

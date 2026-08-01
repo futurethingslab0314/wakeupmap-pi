@@ -535,6 +535,16 @@ class WakeUpMapWebApp:
             
             console.log('🎵 樹莓派故事內容已準備完成:', window.piGeneratedStory);
             console.log('🎵 即將觸發 piStoryReady 事件，Day: {current_day}');
+            
+            if (window.pushLiveStoryToServer) {{
+                window.pushLiveStoryToServer(window.piGeneratedStory);
+            }} else {{
+                fetch('/api/live-story', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify(window.piGeneratedStory)
+                }}).catch(() => {{}});
+            }}
             """
             
             self.web_controller.driver.execute_script(story_js)
