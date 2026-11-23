@@ -755,6 +755,40 @@ function updateConnectionStatus(connected) {
     }
 
     // 開始這一天
+    async function postSharedAwakening(path, payload) {
+        const response = await fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(60000)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || '甦醒同步失敗');
+        return data;
+    }
+
+    async function confirmSharedAwakening() {
+        const input = {
+            action: 'wake-map',
+            userName: rawUserDisplayName,
+            clientIsoTime: new Date().toISOString(),
+            clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+        let result = await postSharedAwakening('/api/shared-awakening', input);
+        for (let attempt = 0; result.hasReservation && !result.record && attempt < 4; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 700));
+            result = await postSharedAwakening('/api/shared-awakening', input);
+        }
+        return result;
+    }
+
+    async function prepareSharedAwakeningContent(pageId) {
+        const result = await postSharedAwakening('/api/shared-awakening-content', {
+            action: 'complete-awakening', pageId
+        });
+        if (result.imageJob) await postSharedAwakening('/api/shared-awakening-image', result.imageJob);
+    }
+
     async function startTheDay() {
         // 立即設置調試標記
         window.debugStartTheDay = 'STARTED';
@@ -765,30 +799,9 @@ function updateConnectionStatus(connected) {
         console.log('🔧 已重置語音故事標記');
         
         console.log('🌅 開始這一天被呼叫 (完整版本)');
-        console.log('🔍 當前狀態檢查:', {
-            db: !!db,
-            auth: !!auth,
-            currentUser: !!auth?.currentUser,
-            currentState: currentState,
-            firebase: !!window.firebaseSDK
-        });
-        
-        // 設置調試進度
-        window.debugStartTheDay = 'CHECKING_STATE';
-        
-        // 檢查基本條件
-        if (!db) {
-            window.debugStartTheDay = 'ERROR_NO_DB';
-            throw new Error('Firebase 資料庫未初始化');
-        }
-        
-        if (!auth || !auth.currentUser) {
-            window.debugStartTheDay = 'ERROR_NO_AUTH';
-            throw new Error('Firebase 認證未完成');
-        }
-        
+        window.currentCityData = null;
         window.debugStartTheDay = 'INITIALIZED';
-        
+
         // 標記這是完整版本
         startTheDay.isFullVersion = true;
         
@@ -804,6 +817,24 @@ function updateConnectionStatus(connected) {
             }
             if (resultTextDiv) resultTextDiv.textContent = '正在尋找你的甦醒城市...';
             console.log('🔄 開始尋找甦醒城市');
+
+            const shared = await confirmSharedAwakening();
+            if (shared.hasReservation) {
+                const record = shared.record;
+                if (!record) throw new Error('正在同步甦醒紀錄，請稍後重試');
+                const city = {
+                    name: record.city,
+                    country: record.country,
+                    latitude: record.latitude,
+                    longitude: record.longitude,
+                    timezone: record.wakeTimeZone,
+                    sharedWakeRecordId: record.id
+                };
+                window.currentCityData = city;
+                await displayAwakeningResult(city);
+                void prepareSharedAwakeningContent(record.id).catch(console.error);
+                return;
+            }
 
             // 計算目標緯度
             const targetLatitude = calculateTargetLatitudeFromTime();
@@ -906,11 +937,6 @@ function updateConnectionStatus(connected) {
         } catch (error) {
             console.error('❌ 開始這一天失敗:', error);
             console.error('❌ 錯誤堆疊:', error.stack);
-            console.error('❌ 當前狀態:', {
-                db: !!db,
-                auth: !!auth.currentUser,
-                firebase: !!window.firebaseSDK
-            });
             setState('error', error.message || '發生未知錯誤');
             updateConnectionStatus(false);
             

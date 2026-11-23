@@ -337,13 +337,11 @@ class AudioManager:
                         'longitude': city_data.get('longitude', 0) if city_data else 0
                     }
                     
-                    # 🔧 立即上傳故事到Firebase，確保數據持久化
-                    self.logger.info("🔥 故事生成成功，立即上傳到Firebase...")
-                    upload_success = self._upload_story_to_firebase(story_content, city_data)
-                    if upload_success:
-                        self.logger.info("✅ 故事已成功上傳到Firebase")
-                    else:
-                        self.logger.warning("⚠️ 故事上傳到Firebase失敗")
+                    if not (city_data and city_data.get('sharedWakeRecordId')):
+                        if self._upload_story_to_firebase(story_content, city_data):
+                            self.logger.info("✅ 故事已成功上傳到Firebase")
+                        else:
+                            self.logger.warning("⚠️ 故事上傳到Firebase失敗")
                     
                     return audio_file, story_content
                 else:
