@@ -15,6 +15,18 @@
   ],
   "rewrites": [
     {
+      "source": "/api/shared-awakening",
+      "destination": "https://wakeupmap-globalversion.vercel.app/api/wakeuphere"
+    },
+    {
+      "source": "/api/shared-awakening-content",
+      "destination": "https://wakeupmap-globalversion.vercel.app/api/wake-up-now"
+    },
+    {
+      "source": "/api/shared-awakening-image",
+      "destination": "https://wakeupmap-globalversion.vercel.app/api/wake-up-image"
+    },
+    {
       "source": "/api/config",
       "destination": "/api/config"
     },

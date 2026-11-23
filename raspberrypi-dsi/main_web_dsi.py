@@ -475,11 +475,9 @@ class WakeUpMapWebApp:
             if story_content:
                 self.logger.info("📖 發現故事內容，檢查Firebase上傳狀態...")
                 
-                # 🕐 等待一下讓Firebase有時間同步（audio_manager已經上傳）
-                import time
-                time.sleep(2)  # 等待2秒讓Firebase同步
-                
-                self.logger.info("🔥 Firebase同步等待完成，現在傳送故事給前端顯示")
+                if not (city_data and city_data.get('sharedWakeRecordId')):
+                    time.sleep(2)
+                    self.logger.info("🔥 Firebase同步等待完成，現在傳送故事給前端顯示")
                 self._send_story_to_web(story_content)
                 
                 if audio_file and audio_file.exists():
@@ -650,13 +648,15 @@ class WakeUpMapWebApp:
             
             # 提取城市資料的 JavaScript
             city_data_js = """
+            if (!window.currentCityData) return null;
             return {
                 city: document.getElementById('cityName') ? document.getElementById('cityName').textContent : '',
                 country: document.getElementById('countryName') ? document.getElementById('countryName').textContent : '',
                 countryCode: window.currentCityData ? window.currentCityData.country_iso_code : '',
                 latitude: window.currentCityData ? window.currentCityData.latitude : null,
                 longitude: window.currentCityData ? window.currentCityData.longitude : null,
-                timezone: window.currentCityData ? window.currentCityData.timezone : ''
+                timezone: window.currentCityData ? window.currentCityData.timezone : '',
+                sharedWakeRecordId: window.currentCityData?.sharedWakeRecordId || null
             };
             """
             
