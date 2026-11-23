@@ -1,6 +1,17 @@
 
 {
   "version": 2,
+  "buildCommand": "node stamp-pi-release.cjs",
+  "headers": [
+    {
+      "source": "/pi.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/pi-release.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/config",
