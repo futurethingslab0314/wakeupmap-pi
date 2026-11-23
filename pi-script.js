@@ -7,9 +7,9 @@ let rawUserDisplayName = "";
 function getConfiguredUserName() {
     try {
         const fromWindowEnv = (window && window.env && window.env.USER_NAME) ? String(window.env.USER_NAME).trim() : '';
-        return fromWindowEnv && fromWindowEnv.length > 0 ? fromWindowEnv : 'YuPie';
+        return fromWindowEnv && fromWindowEnv.length > 0 ? fromWindowEnv.toUpperCase() : '';
     } catch (e) {
-        return 'YuPie';
+        return '';
     }
 }
 rawUserDisplayName = getConfiguredUserName();
@@ -59,14 +59,14 @@ function updateResultData(data) {
     // 更新城市名稱
     const cityNameEl = document.getElementById('cityName');
     if (cityNameEl && data.city) {
-        cityNameEl.textContent = data.city;
+        cityNameEl.textContent = data.city_zh || data.city;
     }
 
     // 更新國家名稱和國旗
     const countryNameEl = document.getElementById('countryName');
     const countryFlagEl = document.getElementById('countryFlag');
     if (countryNameEl && data.country) {
-        countryNameEl.textContent = data.country;
+        countryNameEl.textContent = data.country_zh || data.country;
     }
     if (countryFlagEl && data.flag) {
         countryFlagEl.src = data.flag;
@@ -106,27 +106,14 @@ function ensureInitialState() {
         }
     });
     
-    // 確保 waiting 狀態顯示
     if (waitingStateEl) {
         waitingStateEl.classList.add('active');
         console.log('✅ 強制設定 waiting 狀態為 active');
     }
-    
+
     currentState = 'waiting';
     window.currentState = currentState;
 }
-
-// 設定基本的全域函數（確保始終可用）
-window.startTheDay = function() {
-    console.log('⚠️ 使用基本版本的 startTheDay 函數');
-    try {
-        ensureInitialState();
-    } catch (e) {
-        console.error('❌ 初始化狀態失敗:', e);
-    }
-    
-    return true;
-};
 
 // DOM 元素（全域聲明，確保可訪問）
 let findCityButton, resultTextDiv, countryFlagImg, mapContainerDiv, debugInfoSmall;
@@ -141,6 +128,8 @@ let cityNameEl, countryNameEl, greetingTextEl, coordinatesEl, errorMessageEl;
 
 // 故事相關元素
 let storyTextEl;
+
+let startTheDayInProgress = false;
 
     // 🔧 日誌橋接函數：將前端日誌發送到後端日誌系統
     function logToBackend(level, message, data = null) {
@@ -191,7 +180,7 @@ let storyTextEl;
     }, 100);
 
 // 🔧 重新啟用 piStoryReady 事件處理器，現在僅用於故事顯示
-// 監聽樹莓派傳來的故事內容（Firebase上傳已由後端處理）
+    // 監聽樹莓派傳來的故事內容（上傳已由後端處理）
 window.addEventListener('piStoryReady', (event) => {
     const message = '===== piStoryReady事件觸發！=====';
     logToBackend('INFO', '🎵 [故事事件] ' + message);
@@ -226,7 +215,7 @@ window.addEventListener('piStoryReady', (event) => {
     logToBackend('INFO', '📊 [故事顯示] 後端已整理故事內容，前端僅更新顯示');
     console.log('📊 [故事顯示] 後端已整理故事內容，前端僅更新顯示');
     
-    // 🔧 前端僅負責故事內容顯示，不再處理Firebase上傳
+    // 🔧 前端僅負責故事內容顯示，不再處理後端上傳細節
     const storyData = event.detail;
     
     if (storyData && (storyData.fullContent || storyData.story)) {
@@ -242,12 +231,16 @@ window.addEventListener('piStoryReady', (event) => {
             const resultData = {
                 city: storyData.city || 'Unknown City',
                 country: storyData.country || 'Unknown Country',
+                city_zh: storyData.city_zh || storyData.city || 'Unknown City',
+                country_zh: storyData.country_zh || storyData.country || 'Unknown Country',
                 countryCode: storyData.countryCode || 'XX',
                 latitude: storyData.latitude || 0,
                 longitude: storyData.longitude || 0,
                 greeting: storyData.greeting || 'Good Morning!',
                 language: storyData.language || 'English',
-                story: storyData.story || 'No story available',
+                story: storyData.story_zh || storyData.story || 'No story available',
+                story_en: storyData.story || '',
+                story_zh: storyData.story_zh || storyData.story || '',
                 day: finalDay,
                 flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
             };
@@ -255,7 +248,7 @@ window.addEventListener('piStoryReady', (event) => {
             // 🔧 標記語音故事即將顯示，避免 updateResultData 生成新故事
             window.voiceStoryDisplayed = true;
             window.voiceStoryContent = storyData.fullContent || storyData.story;
-            console.log('✅ [Firebase未初始化分支] 標記語音故事即將顯示');
+            console.log('✅ [未初始化分支] 標記語音故事即將顯示');
             
             updateResultData(resultData);
             
@@ -269,18 +262,27 @@ window.addEventListener('piStoryReady', (event) => {
             }
             return;
         }
-        const finalStory = storyData.fullContent || storyData.story || '';
+        const currentCityData = window.currentCityData || {};
+        const finalStory = storyData.fullContent || storyData.story_zh || storyData.story || '';
+        const mergedLatitude = safeCoordinateValue(storyData.latitude ?? currentCityData.latitude);
+        const mergedLongitude = safeCoordinateValue(storyData.longitude ?? currentCityData.longitude);
         const resultData = {
-            city: storyData.city || '',
-            country: storyData.country || '',
-            countryCode: storyData.countryCode || '',
-            latitude: storyData.latitude || 0,
-            longitude: storyData.longitude || 0,
+            city: storyData.city || currentCityData.name || currentCityData.city || '',
+            country: storyData.country || currentCityData.country || '',
+            city_zh: storyData.city_zh || currentCityData.city_zh || storyData.city || currentCityData.name || currentCityData.city || '',
+            country_zh: storyData.country_zh || currentCityData.country_zh || storyData.country || currentCityData.country || '',
+            countryCode: storyData.countryCode || currentCityData.country_iso_code || '',
+            latitude: mergedLatitude ?? 0,
+            longitude: mergedLongitude ?? 0,
             greeting: storyData.greeting || '',
             language: storyData.language || '',
             story: finalStory,
+            story_en: storyData.story || '',
+            story_zh: storyData.story_zh || storyData.story || '',
             day: storyData.day || 1,
-            flag: storyData.countryCode ? `https://flagcdn.com/96x72/${storyData.countryCode.toLowerCase()}.png` : ''
+            flag: (storyData.countryCode || currentCityData.country_iso_code)
+                ? `https://flagcdn.com/96x72/${(storyData.countryCode || currentCityData.country_iso_code).toLowerCase()}.png`
+                : ''
         };
 
         window.voiceStoryDisplayed = true;
@@ -411,6 +413,7 @@ function updateConnectionStatus(connected) {
         
         try {
             currentState = newState;
+            window.currentState = newState;
 
             // 獲取所有狀態元素
             const waitingStateEl = document.getElementById('waitingState');
@@ -719,8 +722,13 @@ function updateConnectionStatus(connected) {
             setUserNameButton.textContent = '載入中...';
             console.log('🔄 按鈕狀態已更新為載入中');
 
-            // 以 window.env.USER_NAME 為主，沒有就固定使用 YuPie
             rawUserDisplayName = getConfiguredUserName();
+            if (!rawUserDisplayName) {
+                console.warn('⚠️ 尚未設定 USER_NAME，跳過載入');
+                setUserNameButton.textContent = '未設定使用者';
+                setUserNameButton.disabled = false;
+                return;
+            }
             if (userNameInput) userNameInput.value = rawUserDisplayName;
 
             // 更新顯示
@@ -737,6 +745,18 @@ function updateConnectionStatus(connected) {
             
             setUserNameButton.textContent = '載入完成';
             console.log('✅ 使用者資料載入完成:', rawUserDisplayName);
+            
+            // 🗺️ 自動載入使用者的歷史地圖資料
+            console.log('🗺️ 開始自動載入使用者歷史地圖資料...');
+            setTimeout(async () => {
+                try {
+                    await loadHistoryTrajectory();
+                    await loadAndDrawTrajectory();
+                    console.log('✅ 使用者歷史地圖資料載入完成');
+                } catch (error) {
+                    console.error('❌ 載入使用者歷史地圖資料失敗:', error);
+                }
+            }, 1000); // 延遲1秒確保地圖已初始化
             
             setTimeout(() => {
                 if (setUserNameButton) {
@@ -756,6 +776,17 @@ function updateConnectionStatus(connected) {
 
     // 開始這一天
     async function startTheDay() {
+        if (!rawUserDisplayName) {
+            console.warn('⚠️ 尚未設定 USER_NAME，無法開始');
+            setState('waiting');
+            return;
+        }
+        if (startTheDayInProgress) {
+            console.warn('⚠️ startTheDay 已在執行中，忽略重複觸發');
+            return;
+        }
+        startTheDayInProgress = true;
+
         // 立即設置調試標記
         window.debugStartTheDay = 'STARTED';
         
@@ -766,27 +797,13 @@ function updateConnectionStatus(connected) {
         
         console.log('🌅 開始這一天被呼叫 (完整版本)');
         console.log('🔍 當前狀態檢查:', {
-            db: !!db,
-            auth: !!auth,
-            currentUser: !!auth?.currentUser,
             currentState: currentState,
-            firebase: !!window.firebaseSDK
+            notionApi: true
         });
         
         // 設置調試進度
         window.debugStartTheDay = 'CHECKING_STATE';
-        
-        // 檢查基本條件
-        if (!db) {
-            window.debugStartTheDay = 'ERROR_NO_DB';
-            throw new Error('Firebase 資料庫未初始化');
-        }
-        
-        if (!auth || !auth.currentUser) {
-            window.debugStartTheDay = 'ERROR_NO_AUTH';
-            throw new Error('Firebase 認證未完成');
-        }
-        
+
         window.debugStartTheDay = 'INITIALIZED';
         
         // 標記這是完整版本
@@ -796,6 +813,7 @@ function updateConnectionStatus(connected) {
             console.log('🎯 準備設定載入狀態...');
             // 設定載入狀態
             setState('loading');
+            await new Promise((resolve) => requestAnimationFrame(() => resolve()));
             console.log('✅ 載入狀態已設定');
 
             if (findCityButton) {
@@ -889,7 +907,7 @@ function updateConnectionStatus(connected) {
                 console.log('🔗 已設定 window.currentCityData 供後端提取:', window.currentCityData);
                 
                 // 🔧 數據上傳已移至後端 audio_manager，前端僅負責顯示
-                console.log('📊 Firebase 上傳已由後端 audio_manager 處理，前端等待故事內容');
+                console.log('📊 故事上傳已由後端 audio_manager 處理，前端等待故事內容');
 
                 // 然後顯示結果 - 使用新的顯示元素
                 console.log('🎨 開始顯示甦醒結果...');
@@ -907,9 +925,8 @@ function updateConnectionStatus(connected) {
             console.error('❌ 開始這一天失敗:', error);
             console.error('❌ 錯誤堆疊:', error.stack);
             console.error('❌ 當前狀態:', {
-                db: !!db,
-                auth: !!auth.currentUser,
-                firebase: !!window.firebaseSDK
+                currentState: currentState,
+                notionApi: true
             });
             setState('error', error.message || '發生未知錯誤');
             updateConnectionStatus(false);
@@ -926,6 +943,7 @@ function updateConnectionStatus(connected) {
                 findCityButton.textContent = '開始這一天';
             }
             console.log('🔄 重設按鈕狀態');
+            startTheDayInProgress = false;
         }
     }
 
@@ -934,14 +952,22 @@ function updateConnectionStatus(connected) {
         console.log('🎨 顯示甦醒結果:', cityData);
         
         try {
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
+            );
+            const cityZh = translatedLocation.city_zh || cityData.name || cityData.city || '';
+            const countryZh = translatedLocation.country_zh || cityData.country || '';
+
             // 設定城市名稱
             if (cityNameEl) {
-                cityNameEl.textContent = cityData.name || cityData.city;
+                cityNameEl.textContent = cityZh;
             }
             
             // 設定國家名稱
             if (countryNameEl) {
-                countryNameEl.textContent = cityData.country;
+                countryNameEl.textContent = countryZh;
             }
             
             // 設定國旗
@@ -965,15 +991,15 @@ function updateConnectionStatus(connected) {
             initClockMap(
                 cityData.latitude,
                 cityData.longitude,
-                cityData.name,
-                cityData.country
+                cityZh,
+                countryZh
             );
             
             // 🔧 移除這裡的軌跡載入 - 現在在 piStoryReady 事件中處理
             // 確保軌跡載入在 result 狀態激活後進行
             
             // 設定結果文字（保持相容性）
-            const resultText = `今天你在 ${cityData.name}, ${cityData.country} 甦醒！`;
+            const resultText = `今天你在 ${cityZh}, ${countryZh} 甦醒！`;
             if (resultTextDiv) resultTextDiv.textContent = resultText;
             
             // 更新除錯資訊（保持相容性）
@@ -1030,25 +1056,33 @@ function updateConnectionStatus(connected) {
             
             const storyResult = await waitForPiStory;
             console.log('📖 收到樹莓派故事，與語音播放內容一致:', storyResult);
+
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
+            );
+            const cityZh = translatedLocation.city_zh || cityData.name || cityData.city || '';
+            const countryZh = translatedLocation.country_zh || cityData.country || '';
             
             // 獲取當前的 day 計數
-            const q = query(
-                collection(db, 'wakeup_records'),
-                where('userId', '==', rawUserDisplayName)
-            );
-            const querySnapshot = await getDocs(q);
-            const currentDay = querySnapshot.size;
+            const payload = await fetchNotionRecords({ userName: rawUserDisplayName, limit: 100 });
+            const currentDay = (payload.records || []).length;
             
             // 更新結果頁面數據 - 只使用樹莓派的故事
             const resultData = {
-                city: cityData.name,
-                country: cityData.country,
+                city: cityData.name || cityData.city || '',
+                country: cityData.country || '',
+                city_zh: cityZh,
+                country_zh: countryZh,
                 countryCode: cityData.country_iso_code,
                 latitude: cityData.latitude,
                 longitude: cityData.longitude,
                 greeting: storyResult.greeting,
                 language: storyResult.language,
-                story: storyResult.story,
+                story: storyResult.story_zh || storyResult.story,
+                story_en: storyResult.story || '',
+                story_zh: storyResult.story_zh || storyResult.story || '',
                 day: currentDay,
                 flag: cityData.country_iso_code ? `https://flagcdn.com/96x72/${cityData.country_iso_code.toLowerCase()}.png` : ''
             };
@@ -1073,7 +1107,7 @@ function updateConnectionStatus(connected) {
     }
 
     // === 所有備用故事生成函數已刪除 ===
-    // 原因：確保畫面顯示與語音播放和 Firebase 存儲的故事完全一致
+    // 原因：確保畫面顯示與語音播放和後端存儲的故事完全一致
     // 現在只使用樹莓派傳來的故事內容，不再生成替代故事
 
     // 新增：初始化自定義縮放按鈕功能
@@ -1416,141 +1450,67 @@ function updateConnectionStatus(connected) {
         return GREETINGS[language] || GREETINGS['default'];
     }
 
-    // 儲存到 Firebase
+    // 儲存到 Notion（保留函式名稱以兼容舊呼叫）
     async function saveToFirebase(cityData, storyData = null) {
         try {
-            if (!db || !auth.currentUser) {
-                console.log('⚠️ Firebase 未就緒，跳過儲存');
+            if (!cityData) {
+                console.log('⚠️ 城市資料不存在，跳過儲存');
                 return null;
             }
 
-            console.log('📊 開始計算 Day 計數...');
-            console.log('📊 查詢用戶:', rawUserDisplayName);
-
-            // 先獲取現有記錄數量
-            const { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } = window.firebaseSDK;
-            const q = query(
-                collection(db, 'wakeup_records'),
-                where('userId', '==', rawUserDisplayName)
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
             );
-            const querySnapshot = await getDocs(q);
-            const existingRecordsCount = querySnapshot.size;
-            const currentDay = existingRecordsCount + 1;
+            const cityZh = translatedLocation.city_zh || cityData.name || cityData.city || '';
+            const countryZh = translatedLocation.country_zh || cityData.country || '';
 
-            console.log('📊 現有記錄數量:', existingRecordsCount);
-            console.log('📊 新的 Day 值:', currentDay);
-
-            // 列出現有記錄
-            console.log('📊 現有記錄詳情:');
-            querySnapshot.forEach((doc, index) => {
-                const data = doc.data();
-                console.log(`  記錄 ${index + 1}: Day ${data.day}, 日期: ${data.date}, 城市: ${data.city}`);
-            });
-
-            const recordData = {
-                userId: rawUserDisplayName,
-                displayName: rawUserDisplayName,
+            const apiData = {
+                userDisplayName: rawUserDisplayName,
+                dataIdentifier: rawUserDisplayName,
                 groupName: currentGroupName,
-                city: cityData.name,
-                country: cityData.country,
-                countryIsoCode: cityData.country_iso_code,
-                latitude: parseFloat(cityData.latitude),
-                longitude: parseFloat(cityData.longitude),
-                timezone: cityData.timezone || '',
-                localTime: cityData.local_time || '',
-                timestamp: serverTimestamp(),
-                date: new Date().toISOString().split('T')[0],
-                day: currentDay
+                city: cityData.name || cityData.city || '',
+                country: cityData.country || '',
+                city_zh: cityZh,
+                country_zh: countryZh,
+                country_iso_code: cityData.country_iso_code || '',
+                latitude: safeCoordinateValue(cityData.latitude),
+                longtitude: safeCoordinateValue(cityData.longitude),
+                longitude: safeCoordinateValue(cityData.longitude),
+                timezone: cityData.timezone || 'UTC',
+                localTime: cityData.local_time || new Date().toLocaleTimeString(),
+                targetUTCOffset: 8,
+                matchedCityUTCOffset: 8,
+                source: 'raspberry_pi_frontend',
+                translationSource: 'frontend_api',
+                timeMinutes: new Date().getHours() * 60 + new Date().getMinutes(),
+                latitudePreference: safeCoordinateValue(cityData.latitude),
+                latitudeDescription: '',
+                deviceType: 'raspberry_pi_web',
+                story: (storyData && (storyData.story_en || storyData.story)) ? (storyData.story_en || storyData.story) : '',
+                story_zh: (storyData && (storyData.story_zh || storyData.story)) ? (storyData.story_zh || storyData.story) : '',
+                greeting: (storyData && storyData.greeting) ? storyData.greeting : '',
+                language: (storyData && storyData.language) ? storyData.language : '',
+                languageCode: (storyData && storyData.languageCode) ? storyData.languageCode : ''
             };
 
-            // 如果有故事資料，加入記錄中
-            if (storyData) {
-                recordData.story = storyData.story || '';
-                recordData.greeting = storyData.greeting || '';
-                recordData.language = storyData.language || '';
-                recordData.languageCode = storyData.languageCode || '';
-                console.log('📖 包含故事和問候語資料');
+            const apiResponse = await fetch('/api/save-record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(apiData)
+            });
+
+            if (!apiResponse.ok) {
+                throw new Error(`save-record failed: ${apiResponse.status}`);
             }
 
-            console.log('📊 準備保存的記錄:', recordData);
-
-            // 1. 儲存到 wakeup_records 集合（前端直寫）
-            const docRef = await addDoc(collection(db, 'wakeup_records'), recordData);
-            console.log('✅ 記錄已儲存至 wakeup_records 集合');
-            console.log('✅ 文檔 ID:', docRef.id);
-            
-            // 儲存文檔 ID 以供後續更新使用
-            window.currentRecordId = docRef.id;
-
-            // 2. 🔧 重要：同時調用 /api/save-record API 儲存到 artifacts 集合
-            // 這樣 index.html 才能查詢到 future 的資料！
-            try {
-                console.log('📡 同時儲存到 artifacts 集合，確保 index.html 可查詢...');
-                
-                // 🔧 檢查故事內容是否有效
-                const hasValidStory = storyData && (storyData.story || storyData.greeting);
-                console.log('🔍 故事內容檢查:', {
-                    hasStoryData: !!storyData,
-                    hasStory: !!(storyData && storyData.story),
-                    hasGreeting: !!(storyData && storyData.greeting),
-                    storyLength: storyData?.story?.length || 0,
-                    greetingLength: storyData?.greeting?.length || 0
-                });
-                
-                const apiData = {
-                    userDisplayName: rawUserDisplayName,
-                    dataIdentifier: rawUserDisplayName,
-                    groupName: currentGroupName, // 🔧 確保 artifacts 集合包含 groupName: "Pi"
-                    city: cityData.name,
-                    country: cityData.country,
-                    city_zh: cityData.name, // 可加入中文翻譯邏輯
-                    country_zh: cityData.country,
-                    country_iso_code: cityData.country_iso_code || '',
-                    latitude: parseFloat(cityData.latitude) || 0,
-                    longitude: parseFloat(cityData.longitude) || 0,
-                    timezone: cityData.timezone || 'UTC',
-                    localTime: cityData.local_time || new Date().toLocaleTimeString(),
-                    targetUTCOffset: 8, // 台灣時區
-                    matchedCityUTCOffset: 8,
-                    source: 'raspberry_pi_frontend',
-                    translationSource: 'frontend_api',
-                    timeMinutes: new Date().getHours() * 60 + new Date().getMinutes(),
-                    latitudePreference: parseFloat(cityData.latitude) || 0,
-                    latitudeDescription: '',
-                    deviceType: 'raspberry_pi_web',
-                    story: (storyData && storyData.story) ? storyData.story : '', // 🔧 修復：確實檢查故事內容
-                    greeting: (storyData && storyData.greeting) ? storyData.greeting : '', // 🔧 修復：確實檢查問候語內容
-                    language: (storyData && storyData.language) ? storyData.language : '',
-                    languageCode: (storyData && storyData.languageCode) ? storyData.languageCode : ''
-                };
-
-                const apiResponse = await fetch('/api/save-record', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(apiData)
-                });
-
-                if (apiResponse.ok) {
-                    const apiResult = await apiResponse.json();
-                    console.log('✅ 資料已同步到 artifacts 集合，index.html 可查詢');
-                    console.log('✅ artifacts ID:', apiResult.historyId);
-                } else {
-                    console.warn('⚠️ artifacts 同步失敗，但 wakeup_records 已儲存');
-                }
-            } catch (apiError) {
-                console.error('❌ artifacts 同步錯誤:', apiError);
-                console.log('⚠️ wakeup_records 已儲存，artifacts 同步失敗不影響主要功能');
-            }
-            
-            // 更新軌跡線
-            setTimeout(() => {
-                loadAndDrawTrajectory();
-            }, 500);
-
-            return docRef.id;
+            const apiResult = await apiResponse.json();
+            console.log('✅ 記錄已同步到 Notion:', apiResult);
+            return apiResult.pageId || null;
 
         } catch (error) {
-            console.error('❌ 儲存至 Firebase 失敗:', error);
+            console.error('❌ 儲存至 Notion 失敗:', error);
             return null;
         }
     }
@@ -1558,86 +1518,61 @@ function updateConnectionStatus(connected) {
     // 新增：更新現有記錄的故事資料（同時更新 wakeup_records 和 artifacts）
     async function updateFirebaseWithStory(storyData) {
         try {
-            if (!db || !auth.currentUser || !window.currentRecordId) {
-                console.log('⚠️ Firebase 未就緒或沒有記錄 ID，跳過更新');
-                console.log('🔍 調試檢查:', {
-                    db: !!db,
-                    currentUser: !!auth.currentUser,
-                    currentRecordId: window.currentRecordId
-                });
+            if (!window.currentRecordId) {
+                console.log('⚠️ 沒有記錄 ID，跳過更新');
                 return false;
             }
 
-            const { doc, updateDoc } = window.firebaseSDK;
-            
             const updateData = {
-                story: storyData.story || '',
+                story: storyData.story_en || storyData.story || '',
+                story_zh: storyData.story_zh || storyData.story || '',
                 greeting: storyData.greeting || '',
                 language: storyData.language || '',
                 languageCode: storyData.languageCode || ''
             };
+            const cityData = window.currentCityData || {};
+            const translatedLocation = await translateLocationToChinese(
+                cityData.name || cityData.city || '',
+                cityData.country || '',
+                cityData.country_iso_code || ''
+            );
+            const apiData = {
+                userDisplayName: rawUserDisplayName,
+                dataIdentifier: rawUserDisplayName,
+                groupName: currentGroupName,
+                city: cityData.city || 'Unknown City',
+                country: cityData.country || 'Unknown Country',
+                city_zh: translatedLocation.city_zh || cityData.city || 'Unknown City',
+                country_zh: translatedLocation.country_zh || cityData.country || 'Unknown Country',
+                country_iso_code: cityData.country_iso_code || '',
+                latitude: safeCoordinateValue(cityData.latitude),
+                longtitude: safeCoordinateValue(cityData.longitude),
+                longitude: safeCoordinateValue(cityData.longitude),
+                localTime: cityData.local_time || '',
+                story: updateData.story,
+                story_zh: updateData.story_zh,
+                greeting: updateData.greeting,
+                language: updateData.language,
+                languageCode: updateData.languageCode,
+                updateExisting: true,
+                recordId: window.currentRecordId
+            };
 
-            logToBackend('INFO', '📖 [故事更新] 開始更新 Firebase 記錄...');
-            logToBackend('INFO', `📖 [故事更新] 記錄ID: ${window.currentRecordId}`);
-            logToBackend('INFO', `📖 [故事更新] 故事內容長度: ${updateData.story.length}`);
-            
-            console.log('📖 [故事更新] 開始更新 Firebase 記錄...');
-            console.log('📖 [故事更新] 記錄ID:', window.currentRecordId);
-            console.log('📖 [故事更新] 更新資料:', updateData);
-            console.log('📖 [故事更新] 故事內容長度:', updateData.story.length);
+            const apiResponse = await fetch('/api/save-record', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(apiData)
+            });
 
-            // 1. 更新 wakeup_records 集合
-            const docRef = doc(db, 'wakeup_records', window.currentRecordId);
-            await updateDoc(docRef, updateData);
-            
-            logToBackend('INFO', '✅ [故事更新] wakeup_records 已更新');
-            console.log('✅ [故事更新] wakeup_records 已更新');
-
-            // 2. 同時調用 API 更新 artifacts 集合
-            try {
-                console.log('📡 [故事更新] 同時更新 artifacts 集合...');
-                
-                // 從當前城市數據獲取必要資訊
-                const cityData = window.currentCityData || {};
-                
-                const apiData = {
-                    userDisplayName: rawUserDisplayName,
-                    dataIdentifier: rawUserDisplayName,
-                    groupName: currentGroupName,
-                    city: cityData.city || 'Unknown City',
-                    country: cityData.country || 'Unknown Country',
-                    story: updateData.story,
-                    greeting: updateData.greeting,
-                    language: updateData.language,
-                    languageCode: updateData.languageCode,
-                    updateExisting: true, // 標記這是更新操作
-                    recordId: window.currentRecordId
-                };
-
-                const apiResponse = await fetch('/api/save-record', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(apiData)
-                });
-
-                if (apiResponse.ok) {
-                    logToBackend('INFO', '✅ [故事更新] artifacts 集合也已更新');
-                    console.log('✅ [故事更新] artifacts 集合也已更新');
-                } else {
-                    logToBackend('WARN', '⚠️ [故事更新] artifacts 更新失敗，但 wakeup_records 已更新');
-                    console.warn('⚠️ [故事更新] artifacts 更新失敗，但 wakeup_records 已更新');
-                }
-            } catch (apiError) {
-                logToBackend('ERROR', '❌ [故事更新] artifacts 更新錯誤', apiError.message);
-                console.error('❌ [故事更新] artifacts 更新錯誤:', apiError);
+            if (!apiResponse.ok) {
+                throw new Error(`update save-record failed: ${apiResponse.status}`);
             }
-            
-            logToBackend('INFO', '✅ [故事更新] 故事資料更新完成');
-            console.log('✅ [故事更新] 故事資料更新完成');
+
+            console.log('✅ [故事更新] Notion 資料已更新');
             return true;
 
         } catch (error) {
-            console.error('❌ [故事更新] 更新 Firebase 故事資料失敗:', error);
+            console.error('❌ [故事更新] 更新 Notion 故事資料失敗:', error);
             return false;
         }
     }
@@ -1645,28 +1580,11 @@ function updateConnectionStatus(connected) {
     // 載入歷史記錄
     async function loadHistory() {
         try {
-            if (!db) {
-                console.log('⚠️ Firebase 資料庫未初始化');
-                return;
-            }
-            
-            if (!auth.currentUser) {
-                console.log('⚠️ 使用者未認證，跳過載入歷史記錄');
-                return;
-            }
-
             refreshHistoryButton.disabled = true;
             refreshHistoryButton.textContent = '載入中...';
             console.log('📚 載入歷史記錄，使用者:', rawUserDisplayName);
-
-            // 簡化查詢，避免權限問題
-            const q = query(
-                collection(db, 'wakeup_records'),
-                where('userId', '==', rawUserDisplayName),
-                limit(10)
-            );
-
-            const querySnapshot = await getDocs(q);
+            const payload = await fetchNotionRecords({ userName: rawUserDisplayName, limit: 10 });
+            const querySnapshot = (payload.records || []).map(normalizeNotionRecord);
             
             // 清空列表
             historyListUl.innerHTML = '';
@@ -1676,26 +1594,24 @@ function updateConnectionStatus(connected) {
                 historyMarkerLayerGroup.clearLayers();
             }
 
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                
+            querySnapshot.forEach((data) => {
                 // 添加到列表
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <strong>${data.city}, ${data.country}</strong><br>
-                    <small>${data.date} | ${data.localTime || '時間未知'}</small>
+                    <strong>${data.city_zh || data.city}, ${data.country_zh || data.country}</strong><br>
+                    <small>${data.recordedAtDate || ''} | ${data.localTime || '時間未知'}</small>
                 `;
                 historyListUl.appendChild(li);
 
                 // 添加到地圖
-                if (historyMarkerLayerGroup && data.latitude && data.longitude) {
-                    const marker = L.marker([data.latitude, data.longitude])
-                        .bindPopup(`${data.city}, ${data.country}<br>${data.date}`)
+                if (historyMarkerLayerGroup && Number.isFinite(data.latitude) && Number.isFinite(data.longtitude)) {
+                    const marker = L.marker([data.latitude, data.longtitude])
+                        .bindPopup(`${data.city_zh || data.city}, ${data.country_zh || data.country}<br>${data.recordedAtDate || ''}`)
                         .addTo(historyMarkerLayerGroup);
                 }
             });
 
-            historyDebugInfoSmall.textContent = `載入了 ${querySnapshot.size} 筆記錄`;
+            historyDebugInfoSmall.textContent = `載入了 ${querySnapshot.length} 筆記錄`;
 
         } catch (error) {
             console.error('載入歷史記錄失敗:', error);
@@ -1709,30 +1625,13 @@ function updateConnectionStatus(connected) {
     // 載入全球地圖
     async function loadGlobalMap() {
         try {
-            if (!db) {
-                console.log('⚠️ Firebase 資料庫未初始化');
-                return;
-            }
-            
-            if (!auth.currentUser) {
-                console.log('⚠️ 使用者未認證，跳過載入全球地圖');
-                return;
-            }
-
             refreshGlobalMapButton.disabled = true;
             refreshGlobalMapButton.textContent = '載入中...';
 
             const selectedDate = globalDateInput.value || new Date().toISOString().split('T')[0];
             console.log('🌍 載入全球地圖，日期:', selectedDate);
-            
-            // 簡化查詢，避免權限問題
-            let q = query(
-                collection(db, 'wakeup_records'),
-                where('date', '==', selectedDate),
-                limit(50)  // 減少限制數量
-            );
-
-            const querySnapshot = await getDocs(q);
+            const payload = await fetchNotionRecords({ date: selectedDate, limit: 50 });
+            const querySnapshot = (payload.records || []).map(normalizeNotionRecord);
             
             // 清空地圖標記
             if (globalMarkerLayerGroup) {
@@ -1740,14 +1639,12 @@ function updateConnectionStatus(connected) {
             }
 
             let recordCount = 0;
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                
-                if (data.latitude && data.longitude) {
-                    const marker = L.marker([data.latitude, data.longitude])
+            querySnapshot.forEach((data) => {
+                if (Number.isFinite(data.latitude) && Number.isFinite(data.longtitude)) {
+                    const marker = L.marker([data.latitude, data.longtitude])
                         .bindPopup(`
-                            <strong>${data.displayName || data.userId}</strong><br>
-                            ${data.city}, ${data.country}<br>
+                            <strong>${data.userName || data.pageId}</strong><br>
+                            ${data.city_zh || data.city}, ${data.country_zh || data.country}<br>
                             ${data.localTime || '時間未知'}
                         `)
                         .addTo(globalMarkerLayerGroup);
@@ -1829,14 +1726,14 @@ function updateResultData(data) {
         // 更新城市名稱
         const cityNameEl = document.getElementById('cityName');
         if (cityNameEl) {
-            cityNameEl.textContent = data.city || 'Unknown City';
+            cityNameEl.textContent = data.city_zh || data.city || 'Unknown City';
         }
 
         // 更新國家名稱和國旗
         const countryNameEl = document.getElementById('countryName');
         const countryFlagEl = document.getElementById('countryFlag');
         if (countryNameEl) {
-            countryNameEl.textContent = data.country || 'Unknown Country';
+            countryNameEl.textContent = data.country_zh || data.country || 'Unknown Country';
         }
         if (countryFlagEl && data.flag) {
             countryFlagEl.src = data.flag;
@@ -1844,10 +1741,12 @@ function updateResultData(data) {
         }
 
         // 更新座標
-        if (data.latitude && data.longitude) {
+        const latitude = safeCoordinateValue(data.latitude);
+        const longitude = safeCoordinateValue(data.longitude);
+        if (latitude !== null && longitude !== null) {
             const coordinatesEl = document.getElementById('coordinates');
             if (coordinatesEl) {
-                coordinatesEl.textContent = `${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}`;
+                coordinatesEl.textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
             }
             
             // 🔧 不在這裡初始化地圖，統一在 loadHistoryTrajectory 中處理
@@ -1876,80 +1775,10 @@ function updateResultData(data) {
         }
         
         const storyEl = document.getElementById('storyText');
-        if (storyEl) {
-            const currentText = storyEl.textContent;
-            const hasVoiceStory = currentText && 
-                !currentText.includes('正在生成') && 
-                !currentText.includes('正在清喉嚨') && 
-                !currentText.includes('剛起床') &&
-                !currentText.includes('Good Morning! 歡迎使用') &&
-                currentText.length > 30;
-            
-            console.log('🎵 [同步] 故事檢查:', {
-                當前文字長度: currentText?.length || 0,
-                是否有語音故事: hasVoiceStory,
-                全域標記: !!window.voiceStoryDisplayed,
-                當前內容預覽: currentText?.substring(0, 50) + '...'
-            });
-            
-            if (hasVoiceStory) {
-                console.log('✅ [同步] 已有語音故事，跳過重新生成');
-                window.voiceStoryDisplayed = true; // 設置標記
-                return;
-            }
-            
-            storyEl.textContent = '正在生成與語音同步的故事...';
-            console.log('🎵 [同步] 沒有語音故事，開始生成新故事');
-            
-            // 立即調用generatePiStory API
-            setTimeout(async () => {
-                try {
-                    console.log('🎵 [同步] 調用generatePiStory API...');
-                    const response = await fetch('/api/generatePiStory', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            city: data.city || 'Unknown City',
-                            country: data.country || 'Unknown Country'
-                        })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.story) {
-                            console.log('✅ [同步] generatePiStory成功，故事內容:', result.story);
-                            
-                            // 直接開始打字機效果
-                            if (window.startStoryTypewriter) {
-                                console.log('🎬 [同步] 開始打字機效果...');
-                                startStoryTypewriter(result.story);
-                            } else {
-                                console.error('❌ [同步] startStoryTypewriter函數不存在');
-                                storyEl.textContent = result.story;
-                            }
-                            return;
-                        }
-                    }
-                    
-                    console.log('⚠️ [同步] API失敗，使用備案故事');
-                    throw new Error('API失敗');
-                    
-                } catch (error) {
-                    console.error('❌ [同步] generatePiStory失敗:', error);
-                    
-                    // 備案：簡單故事
-                    const backupStory = `今天的你在${data.country || '未知國度'}的${data.city || '未知城市'}醒來。這是一個充滿希望的新開始！`;
-                    console.log('📖 [同步] 使用備案故事:', backupStory);
-                    
-                    if (window.startStoryTypewriter) {
-                        startStoryTypewriter(backupStory);
-                    } else {
-                        storyEl.textContent = backupStory;
-                    }
-                }
-            }, 500);
+        if (storyEl && !storyEl.textContent && data.story) {
+            storyEl.textContent = data.story;
         }
-    }
+}
 
     // 打字機效果相關變數
     let typewriterTimer = null;
@@ -2194,14 +2023,16 @@ function updateResultData(data) {
         globalDateInput.value = new Date().toISOString().split('T')[0];
     }
 
-    // 不再需要 Firebase 認證，直接初始化使用者與狀態
+    // 不再需要舊的後端認證，直接初始化使用者與狀態
     updateConnectionStatus(true);
-    if (currentState === 'waiting' || !currentState) {
-        console.log('🔧 設定初始等待狀態');
-        setState('waiting');
+    console.log('🔧 設定初始等待狀態');
+    setState('waiting');
+    if (findCityButton) {
+        findCityButton.disabled = false;
     }
     console.log('🤖 自動載入使用者資料...');
     loadUserData();
+    window.__realStartTheDay = startTheDay;
     window.startTheDay = startTheDay;
     window.setState = setState;
     console.log('✅ 全域函數已設定');
@@ -2428,15 +2259,51 @@ function normalizeNotionRecord(record) {
     };
 }
 
+function safeCoordinateValue(value) {
+    const parsed = typeof value === 'number' ? value : parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+const locationTranslationCache = new Map();
+
+async function translateLocationToChinese(city, country, countryCode) {
+    const cacheKey = `${city || ''}::${country || ''}::${countryCode || ''}`;
+    if (locationTranslationCache.has(cacheKey)) {
+        return locationTranslationCache.get(cacheKey);
+    }
+
+    try {
+        const response = await fetch('/api/translate-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city, country, countryCode })
+        });
+
+        if (!response.ok) {
+            throw new Error(`translate-location failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const result = {
+            city_zh: data.city_zh || city || '',
+            country_zh: data.country_zh || country || ''
+        };
+        locationTranslationCache.set(cacheKey, result);
+        return result;
+    } catch (error) {
+        console.warn('⚠️ 地名翻譯失敗，改用原文:', error);
+        const result = {
+            city_zh: city || '',
+            country_zh: country || ''
+        };
+        locationTranslationCache.set(cacheKey, result);
+        return result;
+    }
+}
+
 // 載入並繪製軌跡線
 async function loadAndDrawTrajectory() {
     try {
-        // 檢查必要條件
-        if (!db) {
-            console.log('⚠️ Firebase 資料庫未初始化，跳過軌跡線載入');
-            return;
-        }
-        
         if (!mainInteractiveMap) {
             console.log('⚠️ 地圖未初始化，跳過軌跡線載入');
             return;
@@ -2450,36 +2317,24 @@ async function loadAndDrawTrajectory() {
             trajectoryLayer = L.layerGroup().addTo(mainInteractiveMap);
         }
         
-        // 讀取當前用戶的歷史記錄
-        const { collection, query, where, getDocs } = window.firebaseSDK;
-        const q = query(
-            collection(db, 'wakeup_records'),
-            where('userId', '==', rawUserDisplayName)
-        );
-        
-        const querySnapshot = await getDocs(q);
-        trajectoryData = [];
-        
-        // 收集所有有效的軌跡點
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.latitude && data.longitude) {
-                trajectoryData.push({
-                    lat: data.latitude,
-                    lng: data.longitude,
-                    city: data.city,
-                    country: data.country,
-                    date: data.date,
-                    day: data.day || trajectoryData.length + 1,
-                    timestamp: data.timestamp
-                });
-            }
-        });
-        
+        const payload = await fetchNotionRecords({ userName: rawUserDisplayName, limit: 100 });
+        const records = (payload.records || []).map(normalizeNotionRecord);
+        trajectoryData = records
+            .filter(record => Number.isFinite(record.latitude) && Number.isFinite(record.longtitude))
+            .map(record => ({
+                lat: record.latitude,
+                lng: record.longtitude,
+                city: record.city_zh || record.city,
+                country: record.country_zh || record.country,
+                date: record.recordedAtDate || '',
+                day: 1,
+                timestamp: new Date(record.recordedAt || Date.now()).getTime()
+            }));
+
         // 按時間排序
         trajectoryData.sort((a, b) => {
-            const timeA = a.timestamp?.toMillis?.() || 0;
-            const timeB = b.timestamp?.toMillis?.() || 0;
+            const timeA = Number.isFinite(a.timestamp) ? a.timestamp : 0;
+            const timeB = Number.isFinite(b.timestamp) ? b.timestamp : 0;
             return timeA - timeB;
         });
         
@@ -2494,7 +2349,7 @@ async function loadAndDrawTrajectory() {
             console.log('⚠️ 沒有找到軌跡數據，可能原因:');
             console.log('  1. 尚未按過實體按鈕記錄甦醒位置');
             console.log('  2. 用戶名不匹配 (當前:', rawUserDisplayName, ')');
-            console.log('  3. Firebase數據尚未同步');
+            console.log('  3. Notion資料尚未同步');
             return;
         }
         
@@ -2606,7 +2461,7 @@ window.checkTrajectory = function() {
     console.log('軌跡數據:', trajectoryData);
     console.log('軌跡圖層是否存在:', !!trajectoryLayer);
     console.log('主地圖是否存在:', !!mainInteractiveMap);
-    console.log('Firebase資料庫是否就緒:', !!db);
+    console.log('Notion資料是否就緒:', true);
     
     if (trajectoryData.length > 0) {
         console.log('✅ 軌跡數據正常');
@@ -2624,9 +2479,9 @@ window.checkTrajectory = function() {
     loadAndDrawTrajectory();
 };
 
-// Debug functions removed for production
+    // Debug functions removed for production
 
-// Debug functions removed for production
+    // Debug functions removed for production
 
 // ... existing code ...
 
@@ -2661,7 +2516,6 @@ window.checkTrajectory = function() {
             if (dayNumberEl) {
                 dayNumberEl.textContent = historyPoints.length + 1;
             }
-
             initBaseMapIfNeeded();
             if (historyPoints.length > 0 && mainInteractiveMap) {
                 displayHistoryTrajectory(historyPoints);
@@ -3031,31 +2885,23 @@ window.checkTrajectory = function() {
     const maxUserDataLoadAttempts = 3;
     
     function monitorUserDataLoad() {
-        // 檢查是否載入成功
-        if (rawUserDisplayName && rawUserDisplayName !== '') {
+        // 檢查是否載入成功（需為有效名稱）
+        if (rawUserDisplayName && rawUserDisplayName !== 'future' && rawUserDisplayName !== 'unknown') {
             console.log('✅ 用戶資料已載入:', rawUserDisplayName);
             return;
         }
         
         userDataLoadAttempts++;
-        console.log(`⚠️ 用戶資料載入檢查第 ${userDataLoadAttempts} 次`);
+        if (userDataLoadAttempts > maxUserDataLoadAttempts) {
+            console.warn('⚠️ 用戶資料載入重試次數達上限');
+            return;
+        }
         
         if (userDataLoadAttempts >= maxUserDataLoadAttempts) {
             console.log('🔧 用戶資料載入失敗，嘗試強制顯示故事...');
-            // 強制設置用戶資料（以 .env USER_NAME 優先，無則回退 future）
-            rawUserDisplayName = getConfiguredUserName();
+            rawUserDisplayName = rawUserDisplayName || getConfiguredUserName();
             if (currentUserIdSpan) currentUserIdSpan.textContent = rawUserDisplayName;
             if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = rawUserDisplayName;
-            
-            // 嘗試強制顯示故事
-            setTimeout(() => {
-                if (window.forceDisplayStoryFromFirebase) {
-                    forceDisplayStoryFromFirebase();
-                }
-            }, 2000);
-        } else {
-            // 繼續監控
-            setTimeout(monitorUserDataLoad, 5000);
         }
     }
 
@@ -3063,7 +2909,8 @@ window.checkTrajectory = function() {
     setTimeout(monitorUserDataLoad, 10000); // 10秒後開始監控
 
     async function displayLatestStoryFromNotion() {
-        const userName = getConfiguredUserName();
+        const userName = rawUserDisplayName || getConfiguredUserName();
+        if (!userName) return false;
         const payload = await fetchNotionRecords({ userName, limit: 1 });
         const latestRecord = normalizeNotionRecord(payload.latest || {});
         const storyText = latestRecord.story || latestRecord.greeting || '';
@@ -3246,17 +3093,16 @@ setTimeout(() => {
         resultStateEl?.classList.contains('active') ||
         errorStateEl?.classList.contains('active');
     
-    if (!hasActiveState || window.currentState === 'waiting') {
+    if (!hasActiveState) {
         console.log('🔧 沒有活躍狀態，設定等待狀態');
         
         // 移除所有狀態
-        [loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
+        [waitingStateEl, loadingStateEl, resultStateEl, errorStateEl].forEach(el => {
             if (el) {
                 el.classList.remove('active');
             }
         });
         
-        // 顯示等待狀態
         if (waitingStateEl) {
             waitingStateEl.classList.add('active');
             console.log('✅ 等待狀態已設定');

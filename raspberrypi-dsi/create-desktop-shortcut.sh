@@ -49,25 +49,25 @@ Name[en]=WakeUp Map
 Comment=啟動甦醒地圖應用程式
 Comment[en]=Start WakeUp Map Application
 Icon=${SCRIPT_DIR}/../icon-192x192.png
-Exec=${SCRIPT_DIR}/wakeup-map-launcher.sh
+Exec=${SCRIPT_DIR}/../raspberrypi-square/wakeup-map-launcher.sh
 Terminal=true
 StartupNotify=false
 Categories=Application;Education;
-Path=${SCRIPT_DIR}
+Path=${SCRIPT_DIR}/../raspberrypi-square
 EOF
 
 # 設置可執行權限
 chmod +x "$SHORTCUT_FILE"
 chmod +x "${SCRIPT_DIR}/start-wakeup-map.sh"
 chmod +x "${SCRIPT_DIR}/wakeup-map-launcher.sh"
+chmod +x "${SCRIPT_DIR}/../raspberrypi-square/wakeup-map-launcher.sh"
 
 echo -e "${GREEN}✅ 桌面快捷方式創建成功！${NC}"
 echo ""
 echo -e "📋 快捷方式詳情："
 echo -e "   文件位置: ${SHORTCUT_FILE}"
-echo -e "   啟動器: ${SCRIPT_DIR}/wakeup-map-launcher.sh"
-echo -e "   執行腳本: ${SCRIPT_DIR}/start-wakeup-map.sh"
-echo -e "   工作目錄: ${SCRIPT_DIR}"
+echo -e "   啟動器: ${SCRIPT_DIR}/../raspberrypi-square/wakeup-map-launcher.sh"
+echo -e "   工作目錄: ${SCRIPT_DIR}/../raspberrypi-square"
 echo ""
 
 # 檢查項目圖標文件

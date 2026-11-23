@@ -70,43 +70,85 @@ export default async function handler(req, res) {
             };
         }
 
-        // 生成跟城市和國家相關的創意故事
-        const storyPrompt = `請生成一個關於 ${city}, ${country}${countryCode ? ` (${countryCode})` : ''} 的有趣且富有創意的故事。
+        const translationPrompt = `請把以下地名翻譯成標準繁體中文，僅回傳 JSON：
+{
+  "city_zh": "城市中文名",
+  "country_zh": "國家中文名"
+}
 
-要求：
-1. 開頭必須是先用${country}的當地語言說早安，接下來才使用繁體中文講：「今天的你在[國家中文名]的[城市中文名]醒來」
-2. 請將 ${city} 和 ${country} 自動翻譯成適當的繁體中文名稱
-3. 接著描述你在這座城市會做的一件特別的事情，這件事必須與這個城市或國家的特色相關
-4. 可以融入以下元素：
-   - 當地的歷史典故或傳說
-   - 獨特的文化習俗
-   - 特殊的地理景觀
-   - 著名的建築或地標
-   - 當地美食或特產
-   - 有趣的冷知識
-   - 當地人的日常生活方式
-5. 內容要真實且具體，但可以用想像和創意的方式呈現
-6. 語氣要生動有趣，讓人感受到這座城市的魅力
-7. 故事要有畫面感，讓讀者彷彿身歷其境
-8. 控制在50字以內，要精煉但富有想像力
-9. 避免太平凡的描述，要有驚喜感和獨特性`;
+city: ${city}
+country: ${country}
+countryCode: ${countryCode || ''}`;
 
-        const storyResponse = await openai.chat.completions.create({
+        const translationResponse = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: translationPrompt }],
+            temperature: 0,
+            max_tokens: 120,
+            response_format: { type: "json_object" }
+        });
+
+        let translationData = { city_zh: city, country_zh: country };
+        try {
+            translationData = JSON.parse(translationResponse.choices[0].message.content.trim());
+        } catch (parseError) {
+            translationData = { city_zh: city, country_zh: country };
+        }
+
+        const cityZh = translationData.city_zh || city;
+        const countryZh = translationData.country_zh || country;
+
+        // 生成英文故事
+        const storyPromptEn = `Write a vivid but concise English wake-up story about ${city}, ${country}${countryCode ? ` (${countryCode})` : ''}.
+
+Requirements:
+1. Start with: "Today you wake up in ${city}, ${country}."
+2. Mention one distinctive local detail, landmark, culture, food, landscape, or historical element.
+3. Keep it grounded, sensory, and slightly poetic.
+4. Keep it to 80-140 English words.
+5. Do not include Chinese.
+6. Do not include markdown or bullet points.`;
+
+        const storyResponseEn = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: storyPrompt }],
+            messages: [{ role: "user", content: storyPromptEn }],
             temperature: 0.8,
             max_tokens: 250
         });
 
-        const story = storyResponse.choices[0].message.content.trim();
+        const storyEn = storyResponseEn.choices[0].message.content.trim();
+
+        // 生成中文故事
+        const storyPromptZh = `請生成一段關於 ${city}, ${country}${countryCode ? ` (${countryCode})` : ''} 的繁體中文甦醒故事。
+
+要求：
+1. 開頭必須是：「今天的你在${countryZh}的${cityZh}醒來。」
+2. 描述一件和這座城市或國家特色有關的事情。
+3. 要有畫面感、真實感與一點詩意。
+4. 長度控制在80到140字。
+5. 不要加 markdown，不要條列，不要英文。`;
+
+        const storyResponseZh = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: storyPromptZh }],
+            temperature: 0.8,
+            max_tokens: 250
+        });
+
+        const storyZh = storyResponseZh.choices[0].message.content.trim();
 
         res.status(200).json({
             greeting: greetingData.greeting,
             language: greetingData.language,
             languageCode: greetingData.languageCode,
-            story,
-            chineseStory: story,  // 保持向後兼容
-            trivia: story  // 保持向後兼容
+            story: storyEn,
+            story_zh: storyZh,
+            chineseStory: storyZh,
+            trivia: storyZh,
+            city,
+            country,
+            city_zh: cityZh,
+            country_zh: countryZh
         });
 
     } catch (error) {

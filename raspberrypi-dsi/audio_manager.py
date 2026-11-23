@@ -328,10 +328,13 @@ class AudioManager:
                         'greeting': greeting_text,
                         'language': greeting_data.get('language', ''),
                         'languageCode': language_code,
-                        'story': story_text,
+                        'story': greeting_data.get('story', ''),
+                        'story_zh': story_text,
                         'fullContent': full_content,
-                        'city': city_name,
-                        'country': country_name,
+                        'city': greeting_data.get('city', city_name),
+                        'city_zh': greeting_data.get('city_zh', city_data.get('city_zh', city_name) if city_data else city_name),
+                        'country': greeting_data.get('country', country_name),
+                        'country_zh': greeting_data.get('country_zh', city_data.get('country_zh', country_name) if city_data else country_name),
                         'countryCode': country_code,
                         'latitude': city_data.get('latitude', 0) if city_data else 0,
                         'longitude': city_data.get('longitude', 0) if city_data else 0
@@ -525,7 +528,7 @@ class AudioManager:
 
     def _fetch_greeting_and_story_from_api(self, city: str, country: str, country_code: str) -> Optional[Dict[str, Any]]:
         """
-        從 ChatGPT API 獲取當地語言問候語和中文故事
+        從 ChatGPT API 獲取當地語言問候語與中英文故事
         
         Args:
             city: 城市名稱
@@ -533,7 +536,7 @@ class AudioManager:
             country_code: 國家代碼
         
         Returns:
-            Dict: 問候語和故事資料，包含 greeting, language, languageCode, chineseStory 等
+            Dict: 問候語和故事資料，包含 greeting, language, languageCode, story, story_zh 等
         """
         try:
             import requests
@@ -574,7 +577,13 @@ class AudioManager:
                     'greeting': result['greeting'],
                     'language': result['language'],
                     'languageCode': result['languageCode'],
-                    'chineseStory': result['story']  # 使用 story 字段
+                    'story': result.get('story', ''),
+                    'story_zh': result.get('story_zh', result.get('chineseStory', '')),
+                    'chineseStory': result.get('story_zh', result.get('chineseStory', '')),
+                    'city': result.get('city', city),
+                    'country': result.get('country', country),
+                    'city_zh': result.get('city_zh', city),
+                    'country_zh': result.get('country_zh', country)
                 }
                 self.logger.info(f"API 返回故事: {greeting_data['chineseStory']}")
                 return greeting_data
@@ -610,12 +619,16 @@ class AudioManager:
                 'groupName': 'Pi',  # Pi群組
                 'city': story_content.get('city', 'Unknown City'),
                 'country': story_content.get('country', 'Unknown Country'),
+                'city_zh': story_content.get('city_zh', story_content.get('city', 'Unknown City')),
+                'country_zh': story_content.get('country_zh', story_content.get('country', 'Unknown Country')),
                 'story': story_content.get('story', ''),
+                'story_zh': story_content.get('story_zh', story_content.get('story', '')),
                 'greeting': story_content.get('greeting', ''),
                 'language': story_content.get('language', ''),
                 'languageCode': story_content.get('languageCode', ''),
                 'latitude': city_data.get('latitude', 0) if city_data else 0,  # 將由前端補充正確的坐標
-                'longitude': city_data.get('longitude', 0) if city_data else 0
+                'longitude': city_data.get('longitude', 0) if city_data else 0,
+                'longtitude': city_data.get('longitude', 0) if city_data else 0
             }
             
             self.logger.info(f"🔥 [Firebase上傳] 準備上傳數據: {api_data}")

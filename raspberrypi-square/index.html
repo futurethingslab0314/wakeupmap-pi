@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Raspberry Pi Terminal Monitor</title>
+  
+  <!-- Preconnect and import cyber fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'accent-neon': '#45e945',
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['"Inter"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Full dark theme for Leaflet map */
+    .leaflet-container {
+      background: #020202 !important;
+    }
+    /* Enhance visibility of dark map tiles to make geography, borders, and streets stand out clearly */
+    .leaflet-tile {
+      /* Keep map filling style consistent: land is colored gray, water is pitch black, streets are crisp */
+      filter: brightness(3.0) contrast(1.6) grayscale(1);
+    }
+    /* Hide default Leaflet controls to keep the HUD super clean */
+    .leaflet-control-zoom, .leaflet-control-attribution {
+      display: none !important;
+    }
+    
+    /* Cyber pulse animation for map node beacons */
+    @keyframes cyber-pulse {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      50% { transform: scale(1.4); opacity: 0.2; }
+      100% { transform: scale(0.85); opacity: 0.9; }
+    }
+    .cyber-pulse-style {
+      animation: cyber-pulse 2s infinite ease-in-out;
+    }
+
+    /* Scanline overlay effect to make it look like a physical CRT/LCD small display */
+    .scanlines {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.06),
+        rgba(0, 255, 0, 0.02),
+        rgba(0, 0, 255, 0.06)
+      );
+      background-size: 100% 3px, 3px 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Simple custom scrollbar for story dialogue */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 255, 0, 0.03);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(69, 233, 69, 0.35);
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(69, 233, 69, 0.7);
+    }
+
+    .mode-panel {
+      transition: opacity 280ms ease, transform 280ms ease;
+    }
+
+    .mode-panel.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.985);
+    }
+
+    .scan-ring {
+      border: 1px solid rgba(69, 233, 69, 0.65);
+      box-shadow: 0 0 20px rgba(69, 233, 69, 0.18), inset 0 0 20px rgba(69, 233, 69, 0.08);
+    }
+
+    @keyframes locate-pulse {
+      0%, 100% { transform: scale(0.96); opacity: 0.35; }
+      50% { transform: scale(1.04); opacity: 0.9; }
+    }
+
+    .locate-pulse {
+      animation: locate-pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes sweep-line {
+      0% { transform: translateY(-120%); opacity: 0; }
+      15% { opacity: 0.9; }
+      100% { transform: translateY(120%); opacity: 0; }
+    }
+
+    .sweep-line {
+      animation: sweep-line 2.8s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#020202] text-white w-screen h-screen select-none overflow-hidden p-0 m-0 flex flex-col">
+
+  <!-- Main Full Screen Display Panel (Dynamically resizes to match screen/viewport size) -->
+  <div class="relative w-full h-full bg-black flex flex-col p-4 md:p-6 overflow-hidden">
+    
+    <!-- Physical CRT CRT Scanline overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Top Cabinet Bezel Headers & Status LEDs (Simulated Hardware Frame) -->
+    <div class="absolute top-[3px] left-6 right-6 flex items-center justify-between text-[13px] font-mono text-gray-400 uppercase tracking-widest pointer-events-none z-10">
+      <div class="flex items-center gap-2.5">
+        <span class="w-2.5 h-2.5 bg-red-600 rounded-full animate-pulse"></span>
+        <span>PWR_ON</span>
+        <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
+        <span>ACT_RX</span>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <!-- SVG Cpu Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 15h3"/><path d="M1 9h3"/><path d="M1 15h3"/></svg>
+        <span>RPi 4B // HDMI_0 // 1:1 LCD 7.2CM</span>
+      </div>
+    </div>
+
+    <!-- Active Map Canvas Section -->
+    <div class="flex-1 bg-[#0b0b0b] border-2 border-black/80 mb-4 mt-2 relative overflow-hidden group rounded-lg">
+      <!-- Neon grid backing -->
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,0,0.015)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-10"></div>
+      
+      <!-- Leaflet map container -->
+      <div id="map" class="w-full h-full z-0"></div>
+
+      <!-- Idle / locating overlays -->
+      <div id="idle-panel" class="mode-panel absolute inset-0 z-20 flex items-center justify-center bg-black/45 backdrop-blur-[2px]">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(69,233,69,0.16),transparent_55%)]"></div>
+        <div class="relative text-center px-6">
+          <div class="mx-auto mb-6 w-28 h-28 rounded-full border border-[#45e945]/40 locate-pulse scan-ring flex items-center justify-center">
+            <div class="w-16 h-16 rounded-full border border-[#45e945]/70 flex items-center justify-center">
+              <div class="w-7 h-7 rounded-full bg-[#45e945] shadow-[0_0_18px_rgba(69,233,69,0.7)]"></div>
+            </div>
+          </div>
+          <div class="font-display text-[34px] md:text-[54px] tracking-[0.22em] text-[#f4f7f2] uppercase">
+            PRESS THE BUTTON
+          </div>
+          <div class="mt-3 font-mono text-[12px] md:text-[14px] tracking-[0.35em] text-[#45e945]/80 uppercase">
+            TOUCH / PRESS / START
+          </div>
+          <div class="mt-6 mx-auto max-w-[320px] rounded border border-[#45e945]/40 bg-black/70 px-4 py-3 font-mono text-[12px] md:text-[13px] text-gray-300 leading-6">
+            Ready to locate the next city, load the story, and play the voice.
+          </div>
+          <button id="press-button" class="mt-6 inline-flex items-center justify-center rounded-full border border-[#45e945] bg-[#45e945]/10 px-6 py-3 font-mono text-[12px] md:text-[13px] tracking-[0.3em] text-[#f4f7f2] uppercase shadow-[0_0_18px_rgba(69,233,69,0.18)] transition-transform active:scale-95 hover:bg-[#45e945]/20">
+            Press the Button
+          </button>
+        </div>
+      </div>
+
+      <div id="locating-panel" class="mode-panel is-hidden absolute inset-0 z-20 bg-black/80 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(69,233,69,0.12),transparent_58%)]"></div>
+        <div class="absolute inset-x-8 top-10 h-px bg-[#45e945]/25"></div>
+        <div class="absolute inset-x-8 bottom-10 h-px bg-[#45e945]/25"></div>
+        <div class="absolute left-0 right-0 top-0 h-28 bg-gradient-to-b from-[#45e945]/0 via-[#45e945]/20 to-transparent sweep-line"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(69,233,69,0.06)_50%,transparent_100%)] opacity-30"></div>
+        <div class="relative h-full flex flex-col items-center justify-center px-6 text-center">
+          <div class="relative mb-8 w-44 h-44 md:w-56 md:h-56">
+            <div class="absolute inset-0 rounded-full border border-[#45e945]/20"></div>
+            <div class="absolute inset-4 rounded-full border border-[#45e945]/35"></div>
+            <div class="absolute inset-8 rounded-full border border-[#45e945]/60 locate-pulse"></div>
+            <div class="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-[#45e945]/35"></div>
+            <div class="absolute top-1/2 left-0 right-0 h-px -translate-y-1/2 bg-[#45e945]/35"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="text-[#45e945]">
+                <div class="font-mono text-[12px] tracking-[0.4em] uppercase mb-3">LOCATING</div>
+                <div class="font-display text-[32px] md:text-[44px] tracking-[0.25em] uppercase">SIGNAL</div>
+              </div>
+            </div>
+          </div>
+          <div id="locating-city" class="font-display text-[24px] md:text-[36px] text-[#f4f7f2] tracking-[0.18em] uppercase">
+            Searching...
+          </div>
+          <div id="locating-status" class="mt-4 font-mono text-[12px] md:text-[14px] tracking-[0.3em] text-[#45e945]/85 uppercase">
+            SCANNING MAP / ACQUIRING COORDINATES
+          </div>
+          <div class="mt-6 w-full max-w-[360px] rounded border border-[#45e945]/30 bg-black/70 px-4 py-3 font-mono text-[12px] md:text-[13px] text-gray-300">
+            <div class="flex items-center justify-between"><span>LAT</span><span id="locating-lat">--.--</span></div>
+            <div class="flex items-center justify-between"><span>LON</span><span id="locating-lon">--.--</span></div>
+            <div class="flex items-center justify-between"><span>STATE</span><span id="locating-state">ACTIVE SEARCH</span></div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- Live GPS Feed Overlay (Top Left) -->
+      <div class="absolute top-4 left-4 z-10 bg-black/85 border border-white/15 p-4 font-mono text-[14px] text-gray-300 space-y-1.5 rounded pointer-events-none shadow-lg">
+        <div id="hud-user" class="text-[#45e945] font-bold text-[16px] tracking-wide">// Loading User</div>
+        <div id="hud-wakeups" class="text-[14px] text-white">累計甦醒日共 -- 天</div>
+      </div>
+ 
+      <!-- Quick Interactive Header Extras (Top Right) -->
+      <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <!-- Language Switch -->
+        <button id="lang-btn" class="bg-black/80 border border-white/15 hover:border-[#45e945] hover:text-[#45e945] text-white px-3.5 py-2 text-[13px] font-mono font-bold tracking-wide rounded transition-all shadow-md active:scale-95">
+          ZH / EN
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Dialogue Box - City Story Narrative feeds -->
+    <div class="border-2 border-[#45e945] bg-black/90 p-5 relative rounded-lg" style="box-shadow: inset 0 0 12px rgba(0,255,0,0.15)">
+      <div id="story-title" class="absolute top-[-14px] left-4 bg-black px-2 border-l border-r border-[#45e945] text-[14px] font-mono text-[#45e945] uppercase tracking-wider">
+        城市故事記錄 // CITY STORY
+      </div>
+
+      <!-- Loading / Story display context -->
+      <div id="story-loading" class="hidden flex items-center gap-3.5 py-2.5">
+        <svg class="animate-spin h-5 w-5 text-[#45e945]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="font-mono text-base text-gray-300 uppercase tracking-widest animate-pulse">
+          終端整合資訊中... // INTEGRATING LOG DATA...
+        </p>
+      </div>
+
+      <div id="story-error" class="hidden font-mono text-base text-red-500 py-2.5">
+        Failed to fetch log narrative.
+      </div>
+
+      <div id="story-content" class="space-y-2 py-1.5">
+        <p id="story-text" class="text-base md:text-lg font-sans text-gray-100 leading-relaxed font-bold">
+          --
+        </p>
+      </div>
+    </div>
+
+    <!-- Compatibility hooks for DSI controller -->
+    <button id="setUserNameButton" class="absolute left-[-9999px] top-0 w-px h-px opacity-0" aria-hidden="true"></button>
+    <button id="findCityButton" class="absolute left-[-9999px] top-0 w-px h-px opacity-0" aria-hidden="true"></button>
+    <div id="currentUserId" class="hidden" aria-hidden="true"></div>
+    <div id="currentUserDisplayName" class="hidden" aria-hidden="true"></div>
+    <div id="cityName" class="hidden" aria-hidden="true"></div>
+    <div id="countryName" class="hidden" aria-hidden="true"></div>
+    <div id="coordinates" class="hidden" aria-hidden="true"></div>
+    <div id="frontend-log-bridge" class="hidden" aria-hidden="true" data-timestamp=""></div>
+
+  </div>
+
+  <script>
+    // --- Synth Sound Service using Web Audio API ---
+    class SoundService {
+      constructor() {
+        this.audioCtx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.audioCtx) {
+          this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume();
+        }
+      }
+
+      playClick() {
+        if (!this.enabled) return;
+        this.init();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.05);
+
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      }
+
+      playHover() {
+        if (!this.enabled) return;
+        this.init();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        
+        gain.gain.setValueAtTime(0.02, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.02);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.02);
+      }
+    }
+
+    const sound = new SoundService();
+
+    // --- Native English/Chinese Morning Greetings mapped by City ---
+    const LOCAL_GOOD_MORNING = {
+      "Tokyo": "おはよー！",
+      "東京": "おはよー！",
+      "Taipei": "早安！",
+      "台北": "早安！",
+      "Kaohsiung": "早安！",
+      "高雄": "早安！",
+      "London": "Good Morning!",
+      "倫敦": "Good Morning!",
+      "Sydney": "Good Morning!",
+      "雪梨": "Good Morning!",
+      "Bangkok": "อรุณสวัสดิ์ !",
+      "曼谷": "อรุณสวัสดิ์ !",
+      "Istanbul": "Günaydın!",
+      "伊斯坦堡": "Günaydın!",
+      "Mexico City": "¡Buenos días!",
+      "墨西哥城": "¡Buenos días!",
+      "Cairo": "صباح الخير !",
+      "開羅": "صباح الخير !",
+      "Reykjavik": "Góðan daginn!",
+      "雷克雅維克": "Góðan daginn!"
+    };
+
+    // --- Pre-baked high-fidelity Mock dataset ---
+    const MOCK_LOCATIONS = [
+      { 
+        city: "Tokyo", 
+        city_zh: "東京", 
+        country: "Japan", 
+        country_zh: "日本", 
+        longitude: 139.6503, 
+        latitude: 35.6762, 
+        utcOffset: 9, 
+        story: "Day 1: Tokyo awakens with silent streets in Yanaka, steam rising from traditional miso soup and freshly cooked white rice.", 
+        story_zh: "第一天 (Day 1)：東京谷中老街晨光熹微，傳統早餐的味噌湯與現煮白米飯升起裊裊白煙。" 
+      },
+      { 
+        city: "Kaohsiung", 
+        city_zh: "高雄", 
+        country: "Taiwan", 
+        country_zh: "台灣", 
+        longitude: 120.3014, 
+        latitude: 22.6273, 
+        utcOffset: 8, 
+        story: "Day 2: Kaohsiung's morning sun shines over Love River, enjoying warm savory soy milk and local pan-fried meat buns.", 
+        story_zh: "第二天 (Day 2)：高雄愛河畔陽光和煦，享受熱熱的鹹豆漿與在地現烤肉包。" 
+      },
+      { 
+        city: "Reykjavik", 
+        city_zh: "雷克雅維克", 
+        country: "Iceland", 
+        country_zh: "冰島", 
+        longitude: -21.8277, 
+        latitude: 64.1265, 
+        utcOffset: 0, 
+        story: "Day 3: Crisp arctic air under a pastel sky in Reykjavik, locals warming up with hearty oatmeal and strong dark coffee before dawn.", 
+        story_zh: "第三天 (Day 3)：雷克雅維克北極圈凜冽空氣伴隨粉彩晨曦，居民在黎明前享用熱燕麥粥與香濃黑咖啡暖身。" 
+      }
+    ];
+
+    // --- State variables ---
+    let records = [];
+    let combinedLocations = [];
+    let activeIndex = 0;
+    let language = "zh"; // Default to Traditional Chinese
+    let zoomIndex = 2; // Default to scale Level 10
+    const ZOOM_LEVELS = [0, 5, 10, 15, 20];
+    const LEAFLET_ZOOM_MAP = {
+      0: 2,
+      5: 5,
+      10: 10,
+      15: 14,
+      20: 17
+    };
+
+    // Summarization debounce and cache refs
+    let summaryCache = {};
+    let activeTimer = null;
+    let liveStoryCache = null;
+    let uiMode = "idle";
+    let historyOffset = 0;
+    let lastSpokenStoryKey = "";
+    let ttsVoice = null;
+    let ttsVoicesReady = false;
+    const TTS_SETTINGS = {
+      zh: { rate: 0.92, pitch: 1.0, volume: 1.0, voiceHints: ["zh-TW", "zh-HK", "Taiwan", "Hong Kong", "Chinese"] },
+      en: { rate: 0.98, pitch: 1.0, volume: 1.0, voiceHints: ["en-US", "en-GB", "English"] }
+    };
+
+    // Map instances
+    let map = null;
+    let activeMarker = null;
+    let routeLines = [];
+    let routeMarkers = [];
+
+    // --- Initialize Leaflet map ---
+    function initMap() {
+      const initialZoom = LEAFLET_ZOOM_MAP[ZOOM_LEVELS[zoomIndex]] || 10;
+      const initialCoords = [35.6762, 139.6503]; // Default Tokyo
+
+      map = L.map('map', {
+        center: initialCoords,
+        zoom: initialZoom,
+        zoomControl: false,
+        attributionControl: false,
+        dragging: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: false
+      });
+
+      // Dark cyber style tiles (CartoDB Dark Matter)
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
+        maxZoom: 20
+      }).addTo(map);
+    }
+
+    function setUiMode(nextMode, meta = {}) {
+      uiMode = nextMode;
+
+      const idlePanel = document.getElementById("idle-panel");
+      const locatingPanel = document.getElementById("locating-panel");
+      const mapEl = document.getElementById("map");
+      const locatingCity = document.getElementById("locating-city");
+      const locatingStatus = document.getElementById("locating-status");
+      const locatingLat = document.getElementById("locating-lat");
+      const locatingLon = document.getElementById("locating-lon");
+      const locatingState = document.getElementById("locating-state");
+
+      if (idlePanel) idlePanel.classList.toggle("is-hidden", nextMode !== "idle");
+      if (locatingPanel) locatingPanel.classList.toggle("is-hidden", nextMode !== "locating");
+      if (mapEl) mapEl.style.filter = nextMode === "idle" || nextMode === "locating"
+        ? "brightness(0.72) saturate(0.7)"
+        : "";
+
+      if (locatingCity && meta.cityText) locatingCity.textContent = meta.cityText;
+      if (locatingStatus && meta.statusText) locatingStatus.textContent = meta.statusText;
+      if (locatingLat && meta.latitude != null) locatingLat.textContent = Number(meta.latitude).toFixed(4);
+      if (locatingLon && meta.longitude != null) locatingLon.textContent = Number(meta.longitude).toFixed(4);
+      if (locatingState && meta.stateText) locatingState.textContent = meta.stateText;
+    }
+
+    function getVisibleIndex() {
+      if (!combinedLocations.length) return 0;
+      const maxIndex = combinedLocations.length - 1;
+      return Math.max(0, Math.min(maxIndex, maxIndex - historyOffset));
+    }
+
+    function getStoryKey(payload) {
+      if (!payload) return "";
+      return [
+        payload.updatedAt || "",
+        payload.day || "",
+        payload.city || "",
+        payload.story_zh || "",
+        payload.story || "",
+        payload.fullContent || ""
+      ].join("|");
+    }
+
+    function getStoryTextForCurrentLanguage(payload) {
+      if (!payload) return "";
+      return language === "zh"
+        ? (payload.story_zh || payload.fullContent || payload.story || "")
+        : (payload.story || payload.fullContent || payload.story_zh || "");
+    }
+
+    function stopStorySpeech() {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    function pickVoice() {
+      if (!("speechSynthesis" in window)) return null;
+      const voices = window.speechSynthesis.getVoices() || [];
+      if (!voices.length) return null;
+
+      const settings = TTS_SETTINGS[language] || TTS_SETTINGS.en;
+      const hinted = voices.find((voice) =>
+        settings.voiceHints.some((hint) => {
+          const label = `${voice.lang || ""} ${voice.name || ""}`.toLowerCase();
+          return label.includes(hint.toLowerCase());
+        })
+      );
+
+      return hinted || voices.find((voice) => (language === "zh" ? voice.lang?.toLowerCase().startsWith("zh") : voice.lang?.toLowerCase().startsWith("en"))) || voices[0];
+    }
+
+    function announceStory(payload) {
+      if (!payload || !("speechSynthesis" in window)) return;
+
+      const storyText = getStoryTextForCurrentLanguage(payload).trim();
+      if (!storyText) return;
+
+      const storyKey = getStoryKey(payload);
+      if (storyKey && storyKey === lastSpokenStoryKey) return;
+
+      stopStorySpeech();
+
+      const utterance = new SpeechSynthesisUtterance(storyText);
+      const settings = TTS_SETTINGS[language] || TTS_SETTINGS.en;
+      utterance.lang = language === "zh" ? "zh-TW" : "en-US";
+      utterance.rate = settings.rate;
+      utterance.pitch = settings.pitch;
+      utterance.volume = settings.volume;
+      utterance.voice = ttsVoice || pickVoice();
+
+      utterance.onstart = () => {
+        setUiMode("playing", {
+          cityText: payload.city_zh || payload.city || "PLAYING STORY",
+          statusText: "AUDIO OUTPUT ACTIVE",
+          stateText: "READING STORY"
+        });
+      };
+
+      utterance.onend = () => {
+        setUiMode("story");
+      };
+
+      utterance.onerror = () => {
+        setUiMode("story");
+      };
+
+      if (storyKey) {
+        lastSpokenStoryKey = storyKey;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function refreshVoices() {
+      if (!("speechSynthesis" in window)) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return;
+      ttsVoicesReady = true;
+      ttsVoice = pickVoice();
+    }
+
+    function applyActiveRecord(record, options = {}) {
+      if (!record) return;
+
+      const speak = options.speak !== false;
+      setUiMode("story");
+      updateHUDOverlay(record);
+      updateStoryPanel(record);
+      updateMapForRecord(record);
+
+      if (speak) {
+        const speechPayload = {
+          ...record,
+          updatedAt: record.updatedAt || `${record.city || ""}-${record.dayNumber || 0}-${historyOffset}`
+        };
+        announceStory(speechPayload);
+      }
+    }
+
+    function updateStoryPanel(record) {
+      const loadingEl = document.getElementById("story-loading");
+      const errorEl = document.getElementById("story-error");
+      const contentEl = document.getElementById("story-content");
+      const textEl = document.getElementById("story-text");
+
+      if (loadingEl) loadingEl.classList.add("hidden");
+      if (errorEl) errorEl.classList.add("hidden");
+      if (contentEl) contentEl.classList.remove("hidden");
+      if (textEl) textEl.textContent = getStoryTextForCurrentLanguage(record) || "--";
+    }
+
+    function updateMapForRecord(record) {
+      if (!map || !record) return;
+      const lat = record.latitude;
+      const lon = record.longitude;
+      const targetZoom = LEAFLET_ZOOM_MAP[ZOOM_LEVELS[zoomIndex]] || 10;
+
+      map.setView([lat, lon], targetZoom, {
+        animate: true,
+        duration: 1.0
+      });
+
+      const cityName = language === "zh" ? (record.city_zh || record.city) : record.city;
+      const cityKey = record.city;
+      const localGreeting = LOCAL_GOOD_MORNING[cityKey] || "Good Morning!";
+
+      const activeIconHtml = L.divIcon({
+        html: `
+          <div style="position: relative; width: 0; height: 0;">
+            <div class="cyber-pulse-style" style="
+              position: absolute;
+              top: -15px; left: -15px;
+              width: 30px; height: 30px;
+              border: 1.5px solid #45e945;
+              border-radius: 50%;
+              pointer-events: none;
+            "></div>
+            <div style="
+              position: absolute;
+              top: -35px; left: -35px;
+              width: 70px; height: 70px;
+              border: 1px dashed rgba(69, 233, 69, 0.65);
+              border-radius: 50%;
+              pointer-events: none;
+            "></div>
+            <div style="
+              position: absolute;
+              top: -4px; left: -4px;
+              width: 8px; height: 8px;
+              background-color: #45e945;
+              border-radius: 50%;
+              pointer-events: none;
+            "></div>
+            <div style="
+              position: absolute;
+              top: -2px; left: -2px;
+              width: 4px; height: 4px;
+              background-color: #ffffff;
+              border-radius: 50%;
+              pointer-events: none;
+            "></div>
+            <div style="
+              position: absolute;
+              bottom: 34px;
+              left: -135px;
+              width: 270px;
+              background-color: #111111;
+              border: 1.5px solid #45e945;
+              border-radius: 3px;
+              padding: 8px 12px;
+              text-align: center;
+              box-shadow: 0 0 12px rgba(0,255,0,0.35);
+              pointer-events: none;
+            ">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: bold; color: #ffffff; letter-spacing: 0.05em; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${cityName} : ${localGreeting}
+              </div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #aaaaaa; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;">
+                LAT: ${lat.toFixed(4)} / LON: ${lon.toFixed(4)}
+              </div>
+            </div>
+          </div>
+        `,
+        className: "cyber-target-marker",
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      });
+
+      if (activeMarker) {
+        activeMarker.setLatLng([lat, lon]);
+        activeMarker.setIcon(activeIconHtml);
+      } else {
+        activeMarker = L.marker([lat, lon], {
+          icon: activeIconHtml,
+          interactive: false
+        }).addTo(map);
+      }
+    }
+
+    // --- Combine fetched records & mock dataset ---
+    function processLocations() {
+      // Sort records ascending (oldest first) so we trace paths in order (Day 1, Day 2, Day 3)
+      records.sort((a, b) => {
+        const dateA = a.recordedAtDate ? new Date(a.recordedAtDate).getTime() : 0;
+        const dateB = b.recordedAtDate ? new Date(b.recordedAtDate).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      // Formatted real database records
+      const formattedRecords = records.map((r, i) => ({
+        city: r.city,
+        city_zh: r.city_zh || r.city,
+        country: r.country,
+        country_zh: r.country_zh || r.country,
+        longitude: parseFloat(r.longitude),
+        latitude: parseFloat(r.latitude),
+        utcOffset: parseInt(r.utcOffset),
+        story: r.story,
+        story_zh: r.story_zh,
+        userName: r.userName,
+        dayNumber: i + 1
+      }));
+
+      // Unique mock locations
+      const uniqueMocks = MOCK_LOCATIONS.filter(mock => 
+        !formattedRecords.some(r => r.city.toLowerCase() === mock.city.toLowerCase())
+      );
+
+      // If we have actual formatted records, use them as the primary sequential list.
+      // Otherwise, fallback to our mock sequential list.
+      if (formattedRecords.length > 0) {
+        combinedLocations = formattedRecords;
+      } else {
+        combinedLocations = uniqueMocks.map((mock, i) => ({
+          ...mock,
+          dayNumber: i + 1
+        }));
+      }
+      
+      // Default index to last item (most recent discovered)
+      activeIndex = combinedLocations.length > 0 ? combinedLocations.length - 1 : 0;
+    }
+
+    // --- Redraw Route Paths and Neon Node Labels ---
+    function drawRoutes() {
+      if (!map) return;
+
+      // Clear previous lines
+      routeLines.forEach(line => line.remove());
+      routeLines = [];
+      routeMarkers.forEach(marker => marker.remove());
+      routeMarkers = [];
+
+      if (combinedLocations.length === 0) return;
+
+      // Build sequential coordinates from locations
+      const routeCoords = combinedLocations.map(loc => [loc.latitude, loc.longitude]);
+
+      // Glow backing
+      const glowLine = L.polyline(routeCoords, {
+        color: "#45e945",
+        weight: 6,
+        opacity: 0.25,
+        lineJoin: "round"
+      }).addTo(map);
+
+      // Main dashed line
+      const mainLine = L.polyline(routeCoords, {
+        color: "#45e945",
+        weight: 1.5,
+        opacity: 0.85,
+        dashArray: "5, 5",
+        lineJoin: "round"
+      }).addTo(map);
+
+      routeLines = [glowLine, mainLine];
+
+      // Static Nodes & labels for each day location
+      combinedLocations.forEach(loc => {
+        const cityName = language === "zh" ? loc.city_zh : loc.city;
+        const ptName = language === "zh" 
+          ? `${cityName} (第 ${loc.dayNumber} 天)` 
+          : `${cityName} (Day ${loc.dayNumber})`;
+
+        const nodeIcon = L.divIcon({
+          html: `
+            <div style="position: relative; width: 0; height: 0;">
+              <!-- Pulse beacon -->
+              <div class="cyber-pulse-style" style="
+                position: absolute;
+                top: -6px; left: -6px;
+                width: 12px; height: 12px;
+                background-color: rgba(69, 233, 69, 0.4);
+                border: 1px solid #45e945;
+                border-radius: 50%;
+                pointer-events: none;
+              "></div>
+              <!-- Solid inner core -->
+              <div style="
+                position: absolute;
+                top: -3px; left: -3px;
+                width: 6px; height: 6px;
+                background-color: #ffffff;
+                border: 1.5px solid #45e945;
+                border-radius: 50%;
+                pointer-events: none;
+              "></div>
+              <!-- Mini HUD tag -->
+              <div style="
+                position: absolute;
+                left: 14px;
+                top: -15px;
+                background-color: rgba(10, 10, 10, 0.95);
+                border: 1px solid rgba(69, 233, 69, 0.75);
+                padding: 4px 8px;
+                border-radius: 2.5px;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 13px;
+                font-weight: bold;
+                color: #45e945;
+                white-space: nowrap;
+                pointer-events: none;
+                box-shadow: 0 0 6px rgba(0,0,0,0.8);
+              ">
+                ${ptName}
+              </div>
+            </div>
+          `,
+          className: "cyber-route-node",
+          iconSize: [0, 0],
+          iconAnchor: [0, 0]
+        });
+
+        const nodeMarker = L.marker([loc.latitude, loc.longitude], {
+          icon: nodeIcon,
+          interactive: false
+        }).addTo(map);
+
+        routeMarkers.push(nodeMarker);
+      });
+    }
+
+    // --- Update active location marker HUD view ---
+    function updateActiveView() {
+      if (!combinedLocations.length) return;
+      const activeLocation = combinedLocations[getVisibleIndex()];
+      applyActiveRecord(activeLocation, { speak: false });
+    }
+
+    // --- Update HUD Top Left Overlay info ---
+    function updateHUDOverlay(loc) {
+      let activeUserName = "YUUT";
+      if (loc && loc.userName) {
+        activeUserName = loc.userName;
+      } else {
+        const found = records.find(r => r.userName);
+        if (found) activeUserName = found.userName;
+      }
+
+      const userEl = document.getElementById("hud-user");
+      const wakeupEl = document.getElementById("hud-wakeups");
+
+      userEl.textContent = `// ${activeUserName}`;
+      
+      const totalCount = records.length > 0 ? records.length : 3; // Fallback to 3 if mock only
+      if (language === "zh") {
+        wakeupEl.textContent = `累計甦醒日共 ${totalCount} 天`;
+      } else {
+        wakeupEl.textContent = `TOTAL WAKEUPS: ${totalCount} DAYS`;
+      }
+    }
+
+    // --- Story Summary Fetching with Debounce & Cache ---
+    function triggerStoryLoad(loc) {
+      const cityKey = loc.city;
+      const cacheKey = `${cityKey}_${language}`;
+
+      // Reset loading displays
+      const loadingEl = document.getElementById("story-loading");
+      const errorEl = document.getElementById("story-error");
+      const contentEl = document.getElementById("story-content");
+      const textEl = document.getElementById("story-text");
+
+      // Check client-side cache
+      if (summaryCache[cacheKey]) {
+        loadingEl.classList.add("hidden");
+        errorEl.classList.add("hidden");
+        contentEl.classList.remove("hidden");
+        
+        const cachedText = summaryCache[cacheKey];
+        textEl.textContent = cachedText;
+        return;
+      }
+
+      // Debounce trigger
+      if (activeTimer) clearTimeout(activeTimer);
+
+      loadingEl.classList.remove("hidden");
+      errorEl.classList.add("hidden");
+      contentEl.classList.add("hidden");
+
+      activeTimer = setTimeout(async () => {
+        try {
+          const targetStory = language === "zh" ? loc.story_zh : loc.story;
+          
+          const response = await fetch("/api/summarize-story", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ story: targetStory, language })
+          });
+
+          if (!response.ok) throw new Error("Fetch summary failed");
+
+          const data = await response.json();
+          const finalSummary = data.summary;
+
+          summaryCache[cacheKey] = finalSummary;
+
+          loadingEl.classList.add("hidden");
+          contentEl.classList.remove("hidden");
+          textEl.textContent = finalSummary;
+
+        } catch (err) {
+          console.error("Story compilation error, using clipped fallback:", err);
+          
+          const targetStory = language === "zh" ? loc.story_zh : loc.story;
+          const words = targetStory.split(" ");
+          const trimmed = words.length > 10 ? words.slice(0, 10).join(" ") + "..." : targetStory;
+          
+          loadingEl.classList.add("hidden");
+          contentEl.classList.remove("hidden");
+          textEl.textContent = trimmed;
+        }
+      }, 500);
+    }
+
+    // --- Key and Touch Nav actions ---
+    function navigateCity(direction) {
+      if (combinedLocations.length === 0) return;
+      
+      sound.playClick();
+      if (direction === "next") {
+        activeIndex = (activeIndex + 1) % combinedLocations.length;
+      } else {
+        activeIndex = (activeIndex - 1 + combinedLocations.length) % combinedLocations.length;
+      }
+      historyOffset = combinedLocations.length - 1 - activeIndex;
+      updateActiveView();
+    }
+
+    function setHistoryOffset(offset, options = {}) {
+      if (!combinedLocations.length) return;
+      historyOffset = Math.max(0, Math.min(combinedLocations.length - 1, Number(offset) || 0));
+      activeIndex = combinedLocations.length - 1 - historyOffset;
+      const visible = combinedLocations[getVisibleIndex()];
+      if (visible) {
+        applyActiveRecord(visible, { speak: options.speak !== false });
+      }
+    }
+
+    function setBandSwitchPosition(position) {
+      setHistoryOffset(position, { speak: true });
+    }
+
+    function navigateZoom(direction) {
+      sound.playClick();
+      if (direction === "in") {
+        zoomIndex = Math.min(zoomIndex + 1, ZOOM_LEVELS.length - 1);
+      } else {
+        zoomIndex = Math.max(zoomIndex - 1, 0);
+      }
+      updateActiveView();
+    }
+
+    function toggleLanguage() {
+      sound.playClick();
+      language = language === "zh" ? "en" : "zh";
+      
+      // Update toggle button text
+      document.getElementById("lang-btn").textContent = language === "zh" ? "ZH / EN" : "EN / 中文";
+      
+      // Update story panel title
+      document.getElementById("story-title").textContent = language === "zh" 
+        ? "城市故事記錄 // CITY STORY" 
+        : "ARCHIVE FEED // CITY STORY";
+
+      // Redraw map static labels with correct translation
+      drawRoutes();
+      updateActiveView();
+    }
+
+    function exitTerminal() {
+      sound.playClick();
+      // Redirect back to main dashboard React page
+      window.location.href = "/";
+    }
+
+    // --- Keyboard listeners ---
+    window.addEventListener("keydown", (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      if (e.key === "ArrowLeft") {
+        navigateCity("prev");
+      } else if (e.key === "ArrowRight") {
+        navigateCity("next");
+      } else if (e.key === "ArrowUp") {
+        navigateZoom("in");
+      } else if (e.key === "ArrowDown") {
+        navigateZoom("out");
+      } else if (e.key === "Escape") {
+        exitTerminal();
+      }
+    });
+
+    // --- Bind DOM Elements ---
+    const prevBtn = document.getElementById("prev-btn");
+    if (prevBtn) prevBtn.addEventListener("click", () => navigateCity("prev"));
+    const nextBtn = document.getElementById("next-btn");
+    if (nextBtn) nextBtn.addEventListener("click", () => navigateCity("next"));
+    const zoomInBtn = document.getElementById("zoom-in-btn");
+    if (zoomInBtn) zoomInBtn.addEventListener("click", () => navigateZoom("in"));
+    const zoomOutBtn = document.getElementById("zoom-out-btn");
+    if (zoomOutBtn) zoomOutBtn.addEventListener("click", () => navigateZoom("out"));
+    
+    const langBtn = document.getElementById("lang-btn");
+    if (langBtn) langBtn.addEventListener("click", toggleLanguage);
+
+    // Hover sound synthesis
+    const hoverBtns = ["prev-btn", "next-btn", "zoom-in-btn", "zoom-out-btn", "lang-btn"];
+    hoverBtns.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener("mouseenter", () => {
+          sound.playHover();
+        });
+      }
+    });
+
+    // --- Initial fetch on mount ---
+    async function loadDataAndInit() {
+      initMap();
+      
+      try {
+        const response = await fetch("/api/notion-data");
+        if (response.ok) {
+          records = await response.ok ? await response.json() : [];
+        }
+      } catch (err) {
+        console.warn("Failed to fetch live Notion records, relying fully on MOCK data:", err);
+      }
+
+      processLocations();
+      drawRoutes();
+      historyOffset = 0;
+      updateActiveView();
+      setUiMode("idle");
+      loadLiveStory();
+    }
+
+    function applyLiveStory(payload) {
+      if (!payload) return;
+
+      liveStoryCache = payload;
+      setUiMode("story");
+
+      const userEl = document.getElementById("hud-user");
+      const wakeupEl = document.getElementById("hud-wakeups");
+      const textEl = document.getElementById("story-text");
+      const loadingEl = document.getElementById("story-loading");
+      const errorEl = document.getElementById("story-error");
+      const contentEl = document.getElementById("story-content");
+      const currentUserIdEl = document.getElementById("currentUserId");
+      const currentUserDisplayNameEl = document.getElementById("currentUserDisplayName");
+      const cityNameEl = document.getElementById("cityName");
+      const countryNameEl = document.getElementById("countryName");
+      const coordinatesEl = document.getElementById("coordinates");
+      const frontendLogBridge = document.getElementById("frontend-log-bridge");
+
+      if (payload.userDisplayName && userEl) {
+        userEl.textContent = `// ${payload.userDisplayName}`;
+      }
+      if (currentUserIdEl && payload.userDisplayName) currentUserIdEl.textContent = payload.userDisplayName;
+      if (currentUserDisplayNameEl && payload.userDisplayName) currentUserDisplayNameEl.textContent = payload.userDisplayName;
+      if (cityNameEl && payload.city) cityNameEl.textContent = payload.city;
+      if (countryNameEl && payload.country) countryNameEl.textContent = payload.country;
+      if (coordinatesEl && payload.latitude != null && payload.longitude != null) {
+        coordinatesEl.textContent = `${payload.latitude},${payload.longitude}`;
+      }
+      if (frontendLogBridge) {
+        frontendLogBridge.dataset.timestamp = String(Date.now());
+        frontendLogBridge.textContent = JSON.stringify({
+          level: "INFO",
+          message: "square-live-story-applied",
+          data: payload.city || ""
+        });
+      }
+
+      if (payload.day && wakeupEl) {
+        wakeupEl.textContent = language === "zh"
+          ? `累計甦醒日共 ${payload.day} 天`
+          : `TOTAL WAKEUPS: ${payload.day} DAYS`;
+      }
+
+      if (payload.story_zh || payload.story || payload.fullContent) {
+        const storyText = language === "zh"
+          ? (payload.story_zh || payload.fullContent || payload.story || "--")
+          : (payload.story || payload.fullContent || payload.story_zh || "--");
+
+        if (loadingEl) loadingEl.classList.add("hidden");
+        if (errorEl) errorEl.classList.add("hidden");
+        if (contentEl) contentEl.classList.remove("hidden");
+        if (textEl) textEl.textContent = storyText;
+      }
+
+      if (payload.city && payload.latitude != null && payload.longitude != null) {
+        const liveLocation = {
+          city: payload.city,
+          city_zh: payload.city_zh || payload.city,
+          country: payload.country || "",
+          country_zh: payload.country_zh || payload.country || "",
+          latitude: Number(payload.latitude),
+          longitude: Number(payload.longitude),
+          dayNumber: payload.day || 1
+        };
+
+        records = payload.userDisplayName ? [{ userName: payload.userDisplayName, ...liveLocation }] : [];
+        combinedLocations = [liveLocation];
+        activeIndex = 0;
+        historyOffset = 0;
+        drawRoutes();
+        updateActiveView();
+      }
+
+      queueMicrotask(() => announceStory(payload));
+    }
+
+    async function loadLiveStory() {
+      try {
+        setUiMode("locating", {
+          cityText: "LOCATING...",
+          statusText: "SCANNING MAP / ACQUIRING COORDINATES",
+          stateText: "ACTIVE SEARCH"
+        });
+        const response = await fetch("/api/live-story");
+        if (!response.ok) {
+          setUiMode("idle");
+          return;
+        }
+        const payload = await response.json();
+        applyLiveStory(payload);
+      } catch (err) {
+        console.warn("No live story payload yet:", err);
+        setUiMode("idle");
+      }
+    }
+
+    async function pushLiveStoryToServer(payload) {
+      try {
+        await fetch("/api/live-story", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload || {})
+        });
+      } catch (err) {
+        console.warn("Failed to push live story state:", err);
+      }
+    }
+
+    async function startTheDay() {
+      setUiMode("locating", {
+        cityText: "LOCATING...",
+        statusText: "SCANNING MAP / ACQUIRING COORDINATES",
+        stateText: "AWAITING SIGNAL"
+      });
+      stopStorySpeech();
+      lastSpokenStoryKey = "";
+      await loadLiveStory();
+      if (liveStoryCache) {
+        applyLiveStory(liveStoryCache);
+      } else if (combinedLocations.length > 0) {
+        updateActiveView();
+      }
+    }
+
+    function syncUserFieldsFromGlobals() {
+      const userName = window.rawUserDisplayName || window.env?.USER_NAME || "";
+      const currentUserIdEl = document.getElementById("currentUserId");
+      const currentUserDisplayNameEl = document.getElementById("currentUserDisplayName");
+      if (userName) {
+        if (currentUserIdEl) currentUserIdEl.textContent = userName;
+        if (currentUserDisplayNameEl) currentUserDisplayNameEl.textContent = userName;
+      }
+      return userName;
+    }
+
+    document.getElementById("setUserNameButton")?.addEventListener("click", () => {
+      syncUserFieldsFromGlobals();
+    });
+
+    document.getElementById("findCityButton")?.addEventListener("click", () => {
+      syncUserFieldsFromGlobals();
+      stopStorySpeech();
+      lastSpokenStoryKey = "";
+      setUiMode("locating", {
+        cityText: "LOCATING...",
+        statusText: "SCANNING MAP / ACQUIRING COORDINATES",
+        stateText: "AWAITING SIGNAL"
+      });
+      if (liveStoryCache) {
+        applyLiveStory(liveStoryCache);
+      } else {
+        loadLiveStory();
+      }
+    });
+
+    async function forceDisplayStoryFromNotion() {
+      await loadLiveStory();
+      if (liveStoryCache) {
+        applyLiveStory(liveStoryCache);
+      }
+    }
+
+    window.startTheDay = startTheDay;
+    window.forceDisplayStoryFromNotion = forceDisplayStoryFromNotion;
+    window.forceDisplayStoryFromFirebase = forceDisplayStoryFromNotion;
+    window.pushLiveStoryToServer = pushLiveStoryToServer;
+    window.setUiMode = setUiMode;
+    window.setHistoryOffset = setHistoryOffset;
+    window.setBandSwitchPosition = setBandSwitchPosition;
+    window.navigateZoom = navigateZoom;
+    window.navigateCity = navigateCity;
+    window.addEventListener("piStoryReady", (event) => {
+      const payload = event?.detail;
+      if (payload) {
+        applyLiveStory(payload);
+        pushLiveStoryToServer(payload);
+      }
+    });
+
+    // Start everything!
+    window.addEventListener("DOMContentLoaded", loadDataAndInit);
+    document.getElementById("press-button")?.addEventListener("click", () => {
+      document.getElementById("findCityButton")?.click();
+    });
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.addEventListener?.("voiceschanged", refreshVoices);
+      refreshVoices();
+    }
+    
+    // Auto-update map dimensions on viewport/window resize
+    window.addEventListener("resize", () => {
+      if (map) {
+        map.invalidateSize();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -40,8 +40,9 @@ import platform
 logger = logging.getLogger(__name__)
 
 # 配置常數
-WEBSITE_URL = os.getenv('WEBSITE_URL', "https://wakeupmap-pi.vercel.app/pi.html")
+WEBSITE_URL = os.getenv('WEBSITE_URL', "http://127.0.0.1:3000")
 USER_NAME = os.getenv('USER_NAME', 'YuPie')  # 從環境變數設定，預設為 YuPie
+DEBUG_BROWSER = os.getenv('DEBUG_BROWSER', 'false').lower() in ('1', 'true', 'yes', 'on')
 WAIT_TIMEOUT = 30
 LOAD_DELAY = 2
 
@@ -96,15 +97,19 @@ class WebControllerDSI:
         # 記憶體優化
         options.add_argument('--memory-pressure-off')
         options.add_argument('--max_old_space_size=4096')
-        
-        # 網頁顯示設定 (適合 800x480 螢幕)
-        options.add_argument('--window-size=800,480')
-        options.add_argument('--window-position=0,0')
-        
-        # 全螢幕 kiosk 模式，隱藏瀏覽器分頁和工具列
-      #  options.add_argument('--kiosk')
-      #  options.add_argument('--disable-infobars')
-      #  options.add_argument('--hide-scrollbars')
+
+        if DEBUG_BROWSER:
+            # 除錯模式：保留視窗邊框，方便打開 DevTools
+            options.add_argument('--window-size=1200,800')
+            options.add_argument('--window-position=50,50')
+        else:
+            # 顯示模式：固定為 DSI 螢幕尺寸
+            options.add_argument('--window-size=800,480')
+            options.add_argument('--window-position=0,0')
+            options.add_argument('--start-fullscreen')
+            options.add_argument('--kiosk')
+            options.add_argument('--disable-infobars')
+            options.add_argument('--hide-scrollbars')
         
         # 用戶資料目錄
         options.add_argument('--user-data-dir=/tmp/chrome-data')
@@ -151,13 +156,13 @@ class WebControllerDSI:
             # 開啟網站
             self.driver.get(self.website_url)
             time.sleep(LOAD_DELAY)
-            
+
             # 自動填入使用者名稱
             self._fill_username()
-            
+
             # 自動點擊載入資料按鈕
             self._click_load_data_button()
-            
+
             self.logger.info("網站載入和設定完成")
             return True
             
@@ -189,14 +194,17 @@ class WebControllerDSI:
         """點擊載入資料按鈕"""
         try:
             self.logger.info("正在載入用戶資料...")
+            clean_user_name = self.user_name.strip().upper()
             
             # 確保用戶名稱已設定
             self.driver.execute_script(f"""
                 // 設定全域變數
                 window.rawUserDisplayName = '{clean_user_name}';
+                window.env = window.env || {{}};
+                window.env.USER_NAME = '{clean_user_name}';
                 
-                // 設定 localStorage（前端會從這裡讀取）
-                localStorage.setItem('wakeupmap_username', '{clean_user_name}');
+                // 移除：避免污染前端快取
+                // localStorage.setItem('wakeupmap_username', '{clean_user_name}');
                 
                 console.log('🔧 後端設定使用者名稱:', '{clean_user_name}');
             """)
@@ -218,7 +226,10 @@ class WebControllerDSI:
             force_setup_js = f"""
             // 強制設置用戶資料
             window.rawUserDisplayName = '{clean_user_name}';
-            localStorage.setItem('wakeupmap_username', '{clean_user_name}');
+            window.env = window.env || {{}};
+            window.env.USER_NAME = '{clean_user_name}';
+            // 移除：避免污染前端快取
+            // localStorage.setItem('wakeupmap_username', '{clean_user_name}');
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');
