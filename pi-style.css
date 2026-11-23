@@ -1950,15 +1950,13 @@ body {
     border-radius: 0 !important;
 }
 
-.map-zoom-controls .zoom-button {
-    background: #fff !important;
-    color: var(--global-ink) !important;
-    border: var(--global-frame) !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+/* Allow touch gestures to reach the map through the full-screen states. */
+.waiting-state.active,
+.result-state.active {
+    pointer-events: none;
 }
 
-.map-zoom-controls .zoom-button:focus-visible {
-    outline: 3px solid var(--global-accent);
-    outline-offset: 2px;
+.waiting-content-box,
+#resultState .result-info-panel {
+    pointer-events: auto;
 }
