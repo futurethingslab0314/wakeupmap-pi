@@ -2,6 +2,7 @@
 {
   "version": 2,
   "buildCommand": "node stamp-pi-release.cjs",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/pi.html",
