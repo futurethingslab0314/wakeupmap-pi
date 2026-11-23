@@ -1829,4 +1829,136 @@ body {
 /* 今日標記樣式 - 移除hover效果和動畫 */
 .today-marker {
     /* 移除所有hover效果和動畫 */
-} 
+}
+
+/* WakeUp Map Global visual style for the 800×480 Pi display. */
+:root {
+    --global-sans: "Inter", "Noto Sans CJK TC", system-ui, sans-serif;
+    --global-mono: "JetBrains Mono", ui-monospace, monospace;
+    --global-ink: #000;
+    --global-muted: #52525b;
+    --global-accent: #00ff00;
+    --global-frame: 1px solid var(--global-ink);
+}
+
+body {
+    font-family: var(--global-sans);
+    color: var(--global-ink);
+}
+
+.main-display,
+.main-map-background.leaflet-container {
+    background: #fff;
+}
+
+.main-map-background .leaflet-tile {
+    filter: grayscale(1) brightness(1.12) contrast(.86);
+}
+
+.waiting-state,
+.loading-state.active {
+    background: radial-gradient(ellipse at center, rgb(255 255 255 / .68), rgb(0 255 0 / .15));
+}
+
+.waiting-content-box,
+.loading-content-box,
+.error-state .error-content {
+    background: #fff;
+    border: var(--global-frame);
+    border-top: 4px solid var(--global-accent);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 rgb(0 0 0 / .10);
+    color: var(--global-ink);
+    padding: 24px 30px;
+    text-align: left;
+}
+
+.waiting-content-box,
+.loading-content-box {
+    left: 50%;
+    width: min(490px, calc(100vw - 48px));
+    max-width: none;
+    min-height: 0;
+}
+
+.press-button-title,
+.locating-title,
+.error-state .error-text {
+    font: 700 clamp(27px, 5.5vw, 44px) / 1.05 var(--global-sans);
+    letter-spacing: -.045em;
+    color: var(--global-ink);
+    margin: 0 0 12px;
+    animation: none;
+    text-shadow: none;
+}
+
+.press-button-subtitle {
+    font: 500 11px / 1.5 var(--global-mono);
+    letter-spacing: .13em;
+    color: var(--global-muted);
+    margin: 0 0 10px;
+}
+
+.press-button-chinese,
+.locating-progress,
+.error-state .error-subtitle {
+    font: 400 15px / 1.5 var(--global-sans);
+    letter-spacing: 0;
+    color: var(--global-muted);
+    margin: 0;
+}
+
+.error-state.active {
+    background: rgb(255 255 255 / .82);
+}
+
+#resultState .result-info-panel {
+    width: min(390px, calc(100vw - 90px)) !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 30px) !important;
+    background: rgb(255 255 255 / .96) !important;
+    border: var(--global-frame);
+    border-top: 4px solid var(--global-accent);
+    border-radius: 0 !important;
+    padding: 18px 20px !important;
+    box-shadow: 4px 4px 0 rgb(0 0 0 / .10) !important;
+}
+
+#resultState .city-name {
+    font: 700 35px / 1.05 var(--global-sans) !important;
+    letter-spacing: -.045em !important;
+    overflow-wrap: anywhere;
+}
+
+#resultState :is(.date-label, .date-value, .coordinates-text) {
+    font: 500 11px / 1.5 var(--global-mono) !important;
+    color: var(--global-muted) !important;
+}
+
+#resultState :is(.local-greeting, .country-name, .story-text) {
+    font-family: var(--global-sans) !important;
+    color: var(--global-ink) !important;
+}
+
+#resultState .country-name {
+    flex-shrink: 1 !important;
+    overflow-wrap: anywhere;
+}
+
+#resultState .coordinates-text,
+#resultState .country-flag {
+    border-radius: 0 !important;
+}
+
+.map-zoom-controls .zoom-button {
+    background: #fff !important;
+    color: var(--global-ink) !important;
+    border: var(--global-frame) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.map-zoom-controls .zoom-button:focus-visible {
+    outline: 3px solid var(--global-accent);
+    outline-offset: 2px;
+}
