@@ -116,18 +116,6 @@ function ensureInitialState() {
     window.currentState = currentState;
 }
 
-// 設定基本的全域函數（確保始終可用）
-window.startTheDay = function() {
-    console.log('⚠️ 使用基本版本的 startTheDay 函數');
-    try {
-        ensureInitialState();
-    } catch (e) {
-        console.error('❌ 初始化狀態失敗:', e);
-    }
-    
-    return true;
-};
-
 // DOM 元素（全域聲明，確保可訪問）
 let findCityButton, resultTextDiv, countryFlagImg, mapContainerDiv, debugInfoSmall;
 let userNameInput, setUserNameButton, currentUserIdSpan, currentUserDisplayNameSpan;
@@ -411,6 +399,7 @@ function updateConnectionStatus(connected) {
         
         try {
             currentState = newState;
+            window.currentState = newState;
 
             // 獲取所有狀態元素
             const waitingStateEl = document.getElementById('waitingState');

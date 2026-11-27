@@ -30,10 +30,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import (
-    WebDriverException, TimeoutException, 
-    NoSuchElementException, ElementNotInteractableException
-)
+from selenium.common.exceptions import TimeoutException
 import subprocess
 import platform
 
@@ -265,103 +262,74 @@ class WebControllerDSI:
             return False
 
     def click_start_button(self):
-        """點擊開始這一天按鈕"""
+        """啟動甦醒流程，等待這次請求的城市資料。"""
         try:
-            self.logger.info("正在開始這一天...")
-            
-            # 檢查是否為新的狀態管理介面
-            try:
-                # 直接調用 JavaScript 函數來觸發甦醒流程
-                self.logger.info("使用 JavaScript 直接觸發甦醒流程...")
-                result = self.driver.execute_script("""
-                    try {
-                        window.debugStartTheDay = 'NOT_STARTED';
-                        if (typeof startTheDay === 'function') {
-                            startTheDay();
-                            return 'JavaScript 函數已執行';
-                        } else {
-                            return 'startTheDay 函數未找到';
-                        }
-                    } catch (error) {
+            attempt = self.driver.execute_script("""
+                if (document.querySelector('#loadingState.active')) {
+                    return {started: false, error: '甦醒流程仍在處理中'};
+                }
+                if (typeof window.startTheDay !== 'function') {
+                    return {started: false, error: '網頁尚未提供 startTheDay'};
+                }
+
+                window.debugStartTheDay = 'NOT_STARTED';
+                window.currentCityData = null;
+                const pending = window.startTheDay();
+                if (pending && typeof pending.catch === 'function') {
+                    pending.catch(error => {
                         window.debugStartTheDay = 'ERROR: ' + error.message;
-                        return 'JavaScript 錯誤: ' + error.message;
+                    });
+                }
+
+                const status = window.debugStartTheDay;
+                if (status !== 'STARTED' && status !== 'INITIALIZED') {
+                    return {started: false, error: '網頁未進入定位流程 (' + status + ')'};
+                }
+                return {started: true};
+            """)
+            if not attempt['started']:
+                self.logger.warning("無法啟動甦醒流程：%s", attempt['error'])
+                return {'success': False, 'error': attempt['error']}
+
+            def read_city_or_error(driver):
+                return driver.execute_script("""
+                    const status = window.debugStartTheDay;
+                    if (typeof status === 'string' && status.startsWith('ERROR')) {
+                        return {error: status};
                     }
+                    const errorState = document.querySelector('#errorState.active');
+                    if (errorState) {
+                        return {error: errorState.querySelector('#errorMessage')?.textContent
+                            || '網頁定位失敗'};
+                    }
+
+                    const data = window.currentCityData;
+                    const city = data?.name || data?.city;
+                    const isCoordinate = value => (
+                        (typeof value === 'number' || (typeof value === 'string' && value.trim()))
+                        && Number.isFinite(Number(value))
+                    );
+                    if (typeof city !== 'string' || !city.trim()
+                            || !isCoordinate(data?.latitude) || !isCoordinate(data?.longitude)) {
+                        return null;
+                    }
+                    return {city: city.trim()};
                 """)
-                self.logger.info(f"JavaScript 執行結果：{result}")
-                
-                # 檢查調試狀態
-                debug_status = self.driver.execute_script("return window.debugStartTheDay || 'UNKNOWN';")
-                self.logger.info(f"調試狀態：{debug_status}")
-                
-                # 等待處理完成
-                time.sleep(8)
-                
-                # 再次檢查調試狀態
-                final_debug_status = self.driver.execute_script("return window.debugStartTheDay || 'UNKNOWN';")
-                self.logger.info(f"最終調試狀態：{final_debug_status}")
-                
-                # 檢查最終狀態
-                final_state = self.driver.execute_script("return window.currentState || 'unknown';")
-                self.logger.info(f"最終狀態：{final_state}")
-                
-                # 檢查是否有結果顯示
-                try:
-                    city_name = self.driver.execute_script("return document.getElementById('cityName') ? document.getElementById('cityName').textContent : '';")
-                    if city_name:
-                        self.logger.info(f"甦醒城市：{city_name}")
-                        return {'success': True, 'message': '甦醒成功', 'result': f'甦醒城市: {city_name}'}
-                except Exception:
-                    pass
-                
-                # 檢查是否有錯誤
-                try:
-                    error_msg = self.driver.execute_script("return document.getElementById('errorMessage') ? document.getElementById('errorMessage').textContent : '';")
-                    if error_msg:
-                        self.logger.warning(f"檢測到錯誤：{error_msg}")
-                        return {'success': False, 'error': error_msg}
-                except Exception:
-                    pass
-                
-                return {'success': True, 'message': 'JavaScript 觸發完成'}
-                
-            except Exception as js_error:
-                self.logger.warning(f"JavaScript 觸發失敗，回退到按鈕點擊：{js_error}")
-                
-                # 回退到傳統按鈕點擊方式
-                start_button = self.driver.find_element(By.ID, "findCityButton")
-                if not start_button.is_enabled():
-                    self.logger.warning("開始按鈕被禁用，嘗試重新載入資料...")
-                    if not self._click_load_data_button():
-                        return {'success': False, 'error': '無法啟用開始按鈕'}
-                    start_button = self.driver.find_element(By.ID, "findCityButton")
-                
-                # 等待開始按鈕可點擊
-                start_button = self.wait.until(
-                    EC.element_to_be_clickable((By.ID, "findCityButton"))
-                )
-                
-                # 點擊開始按鈕
-                start_button.click()
-                self.logger.info("開始按鈕已點擊")
-                
-                # 等待結果處理
-                time.sleep(5)
-                
-                # 檢查是否有結果顯示
-                try:
-                    result_element = self.driver.find_element(By.ID, "resultText")
-                    if result_element.is_displayed():
-                        result_text = result_element.text
-                        self.logger.info(f"甦醒結果：{result_text}")
-                        return {'success': True, 'message': '開始這一天成功', 'result': result_text}
-                except NoSuchElementException:
-                    pass
-                
-                return {'success': True, 'message': '開始按鈕已點擊'}
-            
-        except Exception as e:
-            self.logger.error(f"點擊開始按鈕失敗：{e}")
-            return {'success': False, 'error': str(e)}
+
+            # The browser publishes city data before it waits for the Pi to generate audio.
+            outcome = WebDriverWait(self.driver, 90).until(read_city_or_error)
+            if 'error' in outcome:
+                self.logger.warning("網頁定位失敗：%s", outcome['error'])
+                return {'success': False, 'error': outcome['error']}
+
+            self.logger.info("甦醒城市：%s", outcome['city'])
+            return {'success': True, 'message': '甦醒成功', 'result': f"甦醒城市: {outcome['city']}"}
+        except TimeoutException:
+            self.logger.warning("等待本次甦醒城市資料逾時")
+            return {'success': False, 'error': '等待本次甦醒城市資料逾時'}
+        except Exception as error:
+            self.logger.exception("點擊開始按鈕失敗")
+            return {'success': False, 'error': str(error)}
 
     def reload_website(self):
         """重新載入網站"""
