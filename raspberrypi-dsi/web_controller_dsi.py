@@ -21,15 +21,12 @@ def load_env_file():
                 if line and not line.startswith('#') and '=' in line:
                     key, value = line.split('=', 1)
                     os.environ[key] = value
-                    print(f"載入環境變數: {key}={value}")
 
 # 載入環境變數
 load_env_file()
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import subprocess
 import platform
@@ -173,7 +170,13 @@ class WebControllerDSI:
             self.logger.info(f"設定使用者名稱: '{clean_user_name}'")
             
             # 設定到前端的隱藏欄位
-            self.driver.execute_script(f"document.getElementById('userName').value = '{clean_user_name}';")
+            self.driver.execute_script("""
+                const userName = arguments[0];
+                window.env = window.env || {};
+                window.env.USER_NAME = userName;
+                const input = document.getElementById('userName');
+                if (input) input.value = userName;
+            """, clean_user_name)
             
             self.logger.info("使用者名稱設定成功")
             return True
@@ -187,53 +190,50 @@ class WebControllerDSI:
         try:
             self.logger.info("正在載入用戶資料...")
             
-            # 確保用戶名稱已設定
-            self.driver.execute_script(f"""
-                // 設定全域變數
-                window.rawUserDisplayName = '{clean_user_name}';
-                
-                // 設定 localStorage（前端會從這裡讀取）
-                localStorage.setItem('wakeupmap_username', '{clean_user_name}');
-                
-                console.log('🔧 後端設定使用者名稱:', '{clean_user_name}');
-            """)
-            
-            # 等待載入資料按鈕出現並可點擊
-            try:
-                load_button = self.wait.until(
-                    EC.element_to_be_clickable((By.ID, "setUserNameButton"))
-                )
-                load_button.click()
+            clean_user_name = self.user_name.strip()
+            loaded = self.driver.execute_script("""
+                const userName = arguments[0];
+                window.env = window.env || {};
+                window.env.USER_NAME = userName;
+                window.rawUserDisplayName = userName;
+                localStorage.setItem('wakeupmap_username', userName);
+                const loadButton = document.getElementById('setUserNameButton');
+                if (!loadButton) return false;
+                loadButton.click();
+                return true;
+            """, clean_user_name)
+            if loaded:
                 self.logger.info("已點擊載入資料按鈕")
-            except Exception as e:
-                self.logger.warning(f"無法點擊載入按鈕：{e}")
-            
+            else:
+                self.logger.warning("網頁找不到載入資料按鈕")
+
             # 等待前端初始化完成
             time.sleep(3)
             
             # 強制設置用戶資料和啟用按鈕
-            force_setup_js = f"""
+            force_setup_js = """
+            const userName = arguments[0];
             // 強制設置用戶資料
-            window.rawUserDisplayName = '{clean_user_name}';
-            localStorage.setItem('wakeupmap_username', '{clean_user_name}');
+            window.rawUserDisplayName = userName;
+            localStorage.setItem('wakeupmap_username', userName);
             
             // 強制啟用開始按鈕
             const findCityButton = document.getElementById('findCityButton');
-            if (findCityButton) {{
+            if (findCityButton) {
                 findCityButton.disabled = false;
                 console.log('🔧 強制啟用開始按鈕');
-            }}
+            }
             
             // 更新用戶顯示
             const currentUserIdSpan = document.getElementById('currentUserId');
             const currentUserDisplayNameSpan = document.getElementById('currentUserDisplayName');
-            if (currentUserIdSpan) currentUserIdSpan.textContent = '{clean_user_name}';
-            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = '{clean_user_name}';
+            if (currentUserIdSpan) currentUserIdSpan.textContent = userName;
+            if (currentUserDisplayNameSpan) currentUserDisplayNameSpan.textContent = userName;
             
             console.log('🔧 用戶資料強制設置完成');
             """
             
-            self.driver.execute_script(force_setup_js)
+            self.driver.execute_script(force_setup_js, clean_user_name)
             self.logger.info("✅ 用戶資料強制設置完成")
             
             # 等待前端初始化完成
