@@ -96,7 +96,7 @@ class WebControllerDSI:
         options.add_argument('--window-position=0,0')
         
         # 全螢幕 kiosk 模式，隱藏瀏覽器分頁和工具列
-      #  options.add_argument('--kiosk')
+        options.add_argument('--kiosk')
       #  options.add_argument('--disable-infobars')
       #  options.add_argument('--hide-scrollbars')
         
