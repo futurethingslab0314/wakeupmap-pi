@@ -27,8 +27,13 @@ export default async function handler(req, res) {
             return;
         }
 
+        const configuredModel = process.env.OPENAI_MODEL?.trim();
+        const model = configuredModel && !configuredModel.startsWith('gpt-3.5-turbo')
+            ? configuredModel
+            : 'gpt-5.4-mini';
+
         const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY
+            apiKey: process.env.OPENAI_API_KEY?.trim()
         });
 
         // 生成問候語和語言信息
@@ -51,10 +56,9 @@ export default async function handler(req, res) {
 注意：只回覆JSON，不要其他文字`;
 
         const greetingResponse = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model,
             messages: [{ role: "user", content: greetingPrompt }],
-            temperature: 0.7,
-            max_tokens: 150
+            max_completion_tokens: 150
         });
 
         let greetingData;
@@ -92,10 +96,9 @@ export default async function handler(req, res) {
 9. 避免太平凡的描述，要有驚喜感和獨特性`;
 
         const storyResponse = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model,
             messages: [{ role: "user", content: storyPrompt }],
-            temperature: 0.8,
-            max_tokens: 250
+            max_completion_tokens: 250
         });
 
         const story = storyResponse.choices[0].message.content.trim();
@@ -110,7 +113,10 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('生成故事時發生錯誤:', error);
-        res.status(500).json({ error: error.message });
+        console.error('生成故事時發生錯誤', {
+            status: Number.isInteger(error?.status) ? error.status : undefined,
+            connectionError: typeof OpenAI.APIConnectionError === 'function' && error instanceof OpenAI.APIConnectionError
+        });
+        res.status(500).json({ error: '故事生成暫時失敗' });
     }
 } 
